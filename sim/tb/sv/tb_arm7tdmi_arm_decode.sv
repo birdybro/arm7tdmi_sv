@@ -141,6 +141,20 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "STMIB decode mismatch");
     end
 
+    decode(32'hE80C_0006); // STMDA r12, {r1-r2}
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd12 || decoded.ls_pre_index || decoded.ls_up ||
+        decoded.ls_load || decoded.block_reglist !== 16'h0006) begin
+      $fatal(1, "STMDA decode mismatch");
+    end
+
+    decode(32'hE90C_0006); // STMDB r12, {r1-r2}
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd12 || !decoded.ls_pre_index || decoded.ls_up ||
+        decoded.ls_load || decoded.block_reglist !== 16'h0006) begin
+      $fatal(1, "STMDB decode mismatch");
+    end
+
     decode(32'hE790_9001); // LDR r9, [r0, r1]
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
     if (!decoded.immediate_operand || decoded.rm !== 4'd1 || decoded.rd !== 4'd9 ||

@@ -116,6 +116,9 @@ module arm7tdmi_core
   logic [15:0] block_next_reglist;
   logic [3:0]  block_next_reg;
   logic        block_last_reg;
+  logic [4:0]  block_reg_count;
+  logic [31:0] block_byte_count;
+  logic [31:0] block_down_offset;
 
   function automatic logic [3:0] first_reg_in_list(input logic [15:0] reglist);
     first_reg_in_list = 4'd0;
@@ -147,6 +150,9 @@ module arm7tdmi_core
   assign block_next_reglist = block_reglist_q & ~(16'h0001 << block_reg_q);
   assign block_next_reg = first_reg_in_list(block_next_reglist);
   assign block_last_reg = block_next_reglist == 16'h0000;
+  assign block_reg_count = reglist_count(decoded.block_reglist);
+  assign block_byte_count = {25'h0, block_reg_count, 2'b00};
+  assign block_down_offset = {25'h0, block_reg_count - 5'd1, 2'b00};
   assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
                    ((decoded.register_shift || decoded.op_class == ARM_OP_MULTIPLY) ? decoded.rs : rd);
 
@@ -445,13 +451,16 @@ module arm7tdmi_core
             mem_wbdata_q <= 32'h0000_0000;
             state_q     <= ST_MEM;
           end else if (decoded.op_class == ARM_OP_BLOCK_DATA_TRANSFER) begin
-            mem_addr_q <= rn_data + (decoded.ls_pre_index ? 32'd4 : 32'd0);
+            mem_addr_q <= decoded.ls_up ? (rn_data + (decoded.ls_pre_index ? 32'd4 : 32'd0)) :
+                                          (rn_data - (decoded.ls_pre_index ? block_byte_count :
+                                                                            block_down_offset));
             block_reglist_q <= decoded.block_reglist;
             block_reg_q <= first_reg_in_list(decoded.block_reglist);
             block_load_q <= decoded.ls_load;
             block_wb_q <= decoded.ls_writeback;
             block_rn_q <= rn;
-            block_wbdata_q <= rn_data + {25'h0, reglist_count(decoded.block_reglist), 2'b00};
+            block_wbdata_q <= decoded.ls_up ? (rn_data + block_byte_count) :
+                                                (rn_data - block_byte_count);
             state_q <= ST_BLOCK_MEM;
           end else begin
             unsupported_o <= 1'b1;
