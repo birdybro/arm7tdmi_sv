@@ -125,6 +125,7 @@ package arm7tdmi_pkg;
     logic [7:0]    hword_offset8;
     logic          psr_write;
     logic          psr_use_spsr;
+    logic [3:0]    psr_field_mask;
     logic          supported;
   } arm_decoded_t;
 

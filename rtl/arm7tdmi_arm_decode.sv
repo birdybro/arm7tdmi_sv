@@ -52,6 +52,7 @@ module arm7tdmi_arm_decode
       hword_offset8:     {instr_i[11:8], instr_i[3:0]},
       psr_write:         instr_i[21],
       psr_use_spsr:      instr_i[22],
+      psr_field_mask:    instr_i[19:16],
       supported:         1'b0
     };
 
@@ -81,8 +82,14 @@ module arm7tdmi_arm_decode
                                 (instr_i[19:16] != 4'd15) && (instr_i[15:12] != 4'd15);
         end else if (is_psr_transfer) begin
           decoded_o.op_class = ARM_OP_PSR_TRANSFER;
-          decoded_o.supported = !instr_i[21] && (instr_i[19:16] == 4'hF) &&
-                                (instr_i[11:0] == 12'h000) && (instr_i[15:12] != 4'd15);
+          if (instr_i[21]) begin
+            decoded_o.supported = !instr_i[22] && !instr_i[25] && (instr_i[19:16] == 4'b1000) &&
+                                  (instr_i[15:12] == 4'hF) && (instr_i[11:4] == 8'h00) &&
+                                  (instr_i[3:0] != 4'd15);
+          end else begin
+            decoded_o.supported = (instr_i[19:16] == 4'hF) &&
+                                  (instr_i[11:0] == 12'h000) && (instr_i[15:12] != 4'd15);
+          end
         end else if (!(instr_i[7:4] == 4'b1001)) begin
           decoded_o.op_class = ARM_OP_DATA_PROCESSING;
           decoded_o.supported = 1'b1;
