@@ -1,0 +1,63 @@
+[submodule "ref/ARM7-verilog-chsasank"]
+	path = ref/ARM7-verilog-chsasank
+	url = https://github.com/chsasank/ARM7.git
+[submodule "ref/ARM9-compatible-soft-CPU-core"]
+	path = ref/ARM9-compatible-soft-CPU-core
+	url = https://github.com/risclite/ARM9-compatible-soft-CPU-core.git
+[submodule "ref/GBA_MiSTer"]
+	path = ref/GBA_MiSTer
+	url = https://github.com/MiSTer-devel/GBA_MiSTer.git
+[submodule "ref/Gopher2600"]
+	path = ref/Gopher2600
+	url = https://github.com/JetSetIlly/Gopher2600.git
+[submodule "ref/NanoBoyAdvance"]
+	path = ref/NanoBoyAdvance
+	url = https://github.com/nba-emu/NanoBoyAdvance.git
+[submodule "ref/NooDS"]
+	path = ref/NooDS
+	url = https://github.com/Hydr8gon/NooDS.git
+[submodule "ref/ares"]
+	path = ref/ares
+	url = https://github.com/ares-emulator/ares.git
+[submodule "ref/desmume"]
+	path = ref/desmume
+	url = https://github.com/TASEmulators/desmume.git
+[submodule "ref/gbajs"]
+	path = ref/gbajs
+	url = https://github.com/endrift/gbajs.git
+[submodule "ref/higan"]
+	path = ref/higan
+	url = https://github.com/higan-emu/higan.git
+[submodule "ref/jgenesis"]
+	path = ref/jgenesis
+	url = https://github.com/jsgroth/jgenesis.git
+[submodule "ref/mame"]
+	path = ref/mame
+	url = https://github.com/MAMEDev/mame.git
+[submodule "ref/melonDS"]
+	path = ref/melonDS
+	url = https://github.com/melonDS-emu/melonDS.git
+[submodule "ref/mgba"]
+	path = ref/mgba
+	url = https://github.com/mgba-emu/mgba.git
+[submodule "ref/processi-vhdl-adamaq01"]
+	path = ref/processi-vhdl-adamaq01
+	url = https://github.com/adamaq01/processi.git
+[submodule "ref/qemu"]
+	path = ref/qemu
+	url = https://github.com/qemu/qemu.git
+[submodule "ref/rustboyadvance-ng"]
+	path = ref/rustboyadvance-ng
+	url = https://github.com/michelhe/rustboyadvance-ng.git
+[submodule "ref/skyeye-sourceforge"]
+	path = ref/skyeye-sourceforge
+	url = https://git.code.sf.net/p/skyeye/code
+[submodule "ref/uARM"]
+	path = ref/uARM
+	url = https://github.com/mellotanica/uARM.git
+[submodule "ref/unicorn"]
+	path = ref/unicorn
+	url = https://github.com/unicorn-engine/unicorn.git
+[submodule "ref/visualboyadvance-m"]
+	path = ref/visualboyadvance-m
+	url = https://github.com/visualboyadvance-m/visualboyadvance-m.git
