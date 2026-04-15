@@ -25,6 +25,7 @@ module tb_arm7tdmi_core_mem
 
   logic [31:0] data_word;
   logic [31:0] wb_word;
+  logic [31:0] load_wb_word;
   int r0_seen;
   int r1_seen;
   int r2_seen;
@@ -33,12 +34,14 @@ module tb_arm7tdmi_core_mem
   int r5_seen;
   int r6_setup_seen;
   int r6_wb_seen;
+  int r7_seen;
   int word_store_seen;
   int down_store_seen;
   int wb_store_seen;
   int byte_store_seen;
   int word_load_seen;
   int down_load_seen;
+  int load_wb_seen;
   int byte_load_seen;
   int loop_seen;
 
@@ -80,11 +83,13 @@ module tb_arm7tdmi_core_mem
       32'h0000_0020: bus_rdata = 32'hE510_5004; // LDR r5, [r0, #-4]
       32'h0000_0024: bus_rdata = 32'hE3A0_6050; // MOV r6, #0x50
       32'h0000_0028: bus_rdata = 32'hE5A6_1004; // STR r1, [r6, #4]!
-      32'h0000_002C: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_002C: bus_rdata = 32'hE5B6_7004; // LDR r7, [r6, #4]!
+      32'h0000_0030: bus_rdata = 32'hEAFF_FFFE; // B .
       32'h0000_003C: bus_rdata = data_word;
       32'h0000_0044: bus_rdata = data_word;
       32'h0000_0045: bus_rdata = {24'h0, data_word[15:8]};
       32'h0000_0054: bus_rdata = wb_word;
+      32'h0000_0058: bus_rdata = load_wb_word;
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
     endcase
   end
@@ -146,6 +151,7 @@ module tb_arm7tdmi_core_mem
     bus_ready = 1'b1;
     data_word = 32'hDEAD_BEEF;
     wb_word = 32'hCAFE_F00D;
+    load_wb_word = 32'h1234_5678;
     r0_seen = 0;
     r1_seen = 0;
     r2_seen = 0;
@@ -154,12 +160,14 @@ module tb_arm7tdmi_core_mem
     r5_seen = 0;
     r6_setup_seen = 0;
     r6_wb_seen = 0;
+    r7_seen = 0;
     word_store_seen = 0;
     down_store_seen = 0;
     wb_store_seen = 0;
     byte_store_seen = 0;
     word_load_seen = 0;
     down_load_seen = 0;
+    load_wb_seen = 0;
     byte_load_seen = 0;
     loop_seen = 0;
 
@@ -213,7 +221,16 @@ module tb_arm7tdmi_core_mem
         r6_wb_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_002C) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd7 && debug_reg_wdata == 32'h1234_5678) begin
+        r7_seen++;
+        load_wb_seen++;
+      end
+
+      if (debug_reg_we && debug_reg_waddr == 4'd6 && debug_reg_wdata == 32'h0000_0058) begin
+        r6_wb_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_0030) begin
         loop_seen++;
       end
     end
@@ -226,8 +243,8 @@ module tb_arm7tdmi_core_mem
       $fatal(1, "expected one byte setup write, saw %0d", r3_seen);
     end
 
-    if (r6_setup_seen != 1 || r6_wb_seen != 1) begin
-      $fatal(1, "expected r6 setup and writeback, saw setup=%0d wb=%0d",
+    if (r6_setup_seen != 1 || r6_wb_seen != 2) begin
+      $fatal(1, "expected r6 setup and two writebacks, saw setup=%0d wb=%0d",
              r6_setup_seen, r6_wb_seen);
     end
 
@@ -237,9 +254,11 @@ module tb_arm7tdmi_core_mem
     end
 
     if (word_load_seen != 1 || r2_seen != 1 || down_load_seen != 1 || r5_seen != 1 ||
+        load_wb_seen != 1 || r7_seen != 1 ||
         byte_load_seen != 1 || r4_seen != 1) begin
-      $fatal(1, "expected word, down-offset, and byte loads, saw word=%0d r2=%0d down=%0d r5=%0d byte=%0d r4=%0d",
-             word_load_seen, r2_seen, down_load_seen, r5_seen, byte_load_seen, r4_seen);
+      $fatal(1, "expected word, down-offset, writeback, and byte loads, saw word=%0d r2=%0d down=%0d r5=%0d wb=%0d r7=%0d byte=%0d r4=%0d",
+             word_load_seen, r2_seen, down_load_seen, r5_seen, load_wb_seen, r7_seen,
+             byte_load_seen, r4_seen);
     end
 
     if (loop_seen < 2) begin

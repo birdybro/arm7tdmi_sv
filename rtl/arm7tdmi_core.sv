@@ -26,11 +26,12 @@ module arm7tdmi_core
   output logic           retired_o,
   output logic           unsupported_o
 );
-  typedef enum logic [1:0] {
+  typedef enum logic [2:0] {
     ST_RESET,
     ST_FETCH,
     ST_EXECUTE,
-    ST_MEM
+    ST_MEM,
+    ST_MEM_WB
   } state_t;
 
   state_t state_q;
@@ -303,16 +304,41 @@ module arm7tdmi_core
               reg_we    <= 1'b1;
               reg_waddr <= mem_rd_q;
               reg_wdata <= mem_byte_q ? {24'h0, bus_rdata_i[7:0]} : bus_rdata_i;
+
+              if (mem_wb_q) begin
+                state_q <= ST_MEM_WB;
+              end else begin
+                retired_o <= 1'b1;
+                pc_q <= pc_q + 32'd4;
+                next_fetch_seq_q <= 1'b0;
+                state_q <= ST_FETCH;
+              end
             end else if (mem_wb_q) begin
               reg_we    <= 1'b1;
               reg_waddr <= mem_rn_q;
               reg_wdata <= mem_addr_q;
+              retired_o <= 1'b1;
+              pc_q <= pc_q + 32'd4;
+              next_fetch_seq_q <= 1'b0;
+              state_q <= ST_FETCH;
+            end else begin
+              retired_o <= 1'b1;
+              pc_q <= pc_q + 32'd4;
+              next_fetch_seq_q <= 1'b0;
+              state_q <= ST_FETCH;
             end
-            retired_o <= 1'b1;
-            pc_q <= pc_q + 32'd4;
-            next_fetch_seq_q <= 1'b0;
-            state_q <= ST_FETCH;
           end
+        end
+
+        ST_MEM_WB: begin
+          reg_we    <= 1'b1;
+          reg_waddr <= mem_rn_q;
+          reg_wdata <= mem_addr_q;
+
+          retired_o <= 1'b1;
+          pc_q <= pc_q + 32'd4;
+          next_fetch_seq_q <= 1'b0;
+          state_q <= ST_FETCH;
         end
 
         default: begin

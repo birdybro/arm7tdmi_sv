@@ -99,6 +99,9 @@ module tb_arm7tdmi_arm_decode
     end
 
     decode(32'hE5B0_1004); // LDR r1, [r0, #4]!
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+
+    decode(32'hE5B0_0004); // LDR r0, [r0, #4]!
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b0);
 
     decode(32'hE5D0_1000); // LDRB r1, [r0]
