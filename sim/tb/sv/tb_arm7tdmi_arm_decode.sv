@@ -164,6 +164,20 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "SMULL decode mismatch");
     end
 
+    decode(32'hE1C0_10B2); // STRH r1, [r0, #2]
+    expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
+    if (!decoded.ls_pre_index || !decoded.ls_up || decoded.ls_load ||
+        decoded.hword_transfer_type !== 2'b01 || decoded.hword_offset8 !== 8'h02) begin
+      $fatal(1, "STRH immediate decode mismatch");
+    end
+
+    decode(32'hE1D0_20B2); // LDRH r2, [r0, #2]
+    expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
+    if (!decoded.ls_pre_index || !decoded.ls_up || !decoded.ls_load ||
+        decoded.hword_transfer_type !== 2'b01 || decoded.hword_offset8 !== 8'h02) begin
+      $fatal(1, "LDRH immediate decode mismatch");
+    end
+
     decode(32'hEF00_0011); // SWI
     expect_class(ARM_OP_SWI, 1'b0);
 

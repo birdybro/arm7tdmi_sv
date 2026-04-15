@@ -39,6 +39,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-mem`
 - `make tb-core-mem-regoffset`
 - `make tb-core-multiply`
+- `make tb-core-halfword`
 - `make test`
 
 ## Implemented So Far
@@ -51,6 +52,7 @@ The repository Makefile provides the current regression surface:
 - ARM branch-and-exchange to ARM-state targets.
 - ARM multiply and multiply-accumulate, including N/Z flag updates for `MULS`.
 - ARM non-accumulating long multiply `UMULL`/`SMULL`.
+- ARM immediate unsigned halfword transfers `LDRH`/`STRH`.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.

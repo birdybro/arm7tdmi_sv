@@ -48,6 +48,8 @@ module arm7tdmi_arm_decode
       ls_offset12:       instr_i[11:0],
       mul_accumulate:    instr_i[21],
       mul_long_signed:   instr_i[22],
+      hword_transfer_type: instr_i[6:5],
+      hword_offset8:     {instr_i[11:8], instr_i[3:0]},
       supported:         1'b0
     };
 
@@ -71,6 +73,10 @@ module arm7tdmi_arm_decode
           decoded_o.op_class = ARM_OP_SWAP;
         end else if (is_halfword_transfer) begin
           decoded_o.op_class = ARM_OP_HALFWORD_TRANSFER;
+          decoded_o.register_shift = 1'b0;
+          decoded_o.supported = instr_i[22] && instr_i[24] && !instr_i[21] &&
+                                (instr_i[6:5] == 2'b01) &&
+                                (instr_i[19:16] != 4'd15) && (instr_i[15:12] != 4'd15);
         end else if (is_psr_transfer) begin
           decoded_o.op_class = ARM_OP_PSR_TRANSFER;
         end else if (!(instr_i[7:4] == 4'b1001)) begin
