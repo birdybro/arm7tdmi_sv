@@ -1,0 +1,100 @@
+`timescale 1ns/1ps
+
+package arm7tdmi_pkg;
+  typedef enum logic [4:0] {
+    MODE_USR = 5'b10000,
+    MODE_FIQ = 5'b10001,
+    MODE_IRQ = 5'b10010,
+    MODE_SVC = 5'b10011,
+    MODE_ABT = 5'b10111,
+    MODE_UND = 5'b11011,
+    MODE_SYS = 5'b11111
+  } arm_mode_t;
+
+  typedef struct packed {
+    logic n;
+    logic z;
+    logic c;
+    logic v;
+  } arm_flags_t;
+
+  typedef struct packed {
+    logic [31:0] raw;
+  } arm_cpsr_t;
+
+  typedef enum logic [3:0] {
+    COND_EQ = 4'h0,
+    COND_NE = 4'h1,
+    COND_CS = 4'h2,
+    COND_CC = 4'h3,
+    COND_MI = 4'h4,
+    COND_PL = 4'h5,
+    COND_VS = 4'h6,
+    COND_VC = 4'h7,
+    COND_HI = 4'h8,
+    COND_LS = 4'h9,
+    COND_GE = 4'hA,
+    COND_LT = 4'hB,
+    COND_GT = 4'hC,
+    COND_LE = 4'hD,
+    COND_AL = 4'hE,
+    COND_NV = 4'hF
+  } arm_cond_t;
+
+  typedef enum logic [3:0] {
+    ALU_AND = 4'h0,
+    ALU_EOR = 4'h1,
+    ALU_SUB = 4'h2,
+    ALU_RSB = 4'h3,
+    ALU_ADD = 4'h4,
+    ALU_ADC = 4'h5,
+    ALU_SBC = 4'h6,
+    ALU_RSC = 4'h7,
+    ALU_TST = 4'h8,
+    ALU_TEQ = 4'h9,
+    ALU_CMP = 4'hA,
+    ALU_CMN = 4'hB,
+    ALU_ORR = 4'hC,
+    ALU_MOV = 4'hD,
+    ALU_BIC = 4'hE,
+    ALU_MVN = 4'hF
+  } arm_alu_op_t;
+
+  typedef enum logic [1:0] {
+    SHIFT_LSL = 2'b00,
+    SHIFT_LSR = 2'b01,
+    SHIFT_ASR = 2'b10,
+    SHIFT_ROR = 2'b11
+  } arm_shift_t;
+
+  typedef enum logic [1:0] {
+    BUS_SIZE_BYTE = 2'b00,
+    BUS_SIZE_HALF = 2'b01,
+    BUS_SIZE_WORD = 2'b10
+  } arm_bus_size_t;
+
+  typedef enum logic [1:0] {
+    BUS_CYCLE_NONSEQ = 2'b00,
+    BUS_CYCLE_SEQ    = 2'b01,
+    BUS_CYCLE_INT    = 2'b10,
+    BUS_CYCLE_COPROC = 2'b11
+  } arm_bus_cycle_t;
+
+  function automatic arm_flags_t cpsr_flags(input logic [31:0] cpsr);
+    logic unused;
+    unused = ^cpsr[27:0];
+    cpsr_flags.n = cpsr[31] ^ (unused & 1'b0);
+    cpsr_flags.z = cpsr[30];
+    cpsr_flags.c = cpsr[29];
+    cpsr_flags.v = cpsr[28];
+  endfunction
+
+  function automatic logic [31:0] cpsr_with_flags(
+      input logic [31:0] cpsr,
+      input arm_flags_t flags
+  );
+    logic unused;
+    unused = ^cpsr[31:28];
+    cpsr_with_flags = {flags.n ^ (unused & 1'b0), flags.z, flags.c, flags.v, cpsr[27:0]};
+  endfunction
+endpackage
