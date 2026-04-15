@@ -55,7 +55,7 @@ module tb_arm7tdmi_arm_decode
     end
 
     decode(32'hE080_1312); // ADD r1, r0, r2, LSL r3
-    expect_class(ARM_OP_DATA_PROCESSING, 1'b0);
+    expect_class(ARM_OP_DATA_PROCESSING, 1'b1);
     if (!decoded.register_shift || decoded.rs !== 4'd3) begin
       $fatal(1, "register-specified shift decode mismatch");
     end

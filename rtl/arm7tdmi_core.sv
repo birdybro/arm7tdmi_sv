@@ -43,7 +43,7 @@ module arm7tdmi_core
   arm_decoded_t decoded;
   logic [31:0] rn_data;
   logic [31:0] rm_data;
-  logic [31:0] rd_data;
+  logic [31:0] rs_data;
   logic [31:0] cpsr;
   logic [31:0] spsr;
   arm_flags_t flags;
@@ -64,6 +64,8 @@ module arm7tdmi_core
   logic [31:0] shifted_rm;
   logic        shifted_rm_carry;
   logic [7:0]  shift_amount;
+  logic [7:0]  rs_shift_amount;
+  logic        unused_rs_upper;
   arm_shift_t  shift_type;
   logic [31:0] alu_result;
   arm_flags_t  alu_flags;
@@ -79,6 +81,8 @@ module arm7tdmi_core
 
   assign flags = cpsr_flags(cpsr);
   assign mode  = arm_mode_t'(cpsr[4:0]);
+  assign rs_shift_amount = rs_data[7:0];
+  assign unused_rs_upper = ^rs_data[31:8];
 
   arm7tdmi_regfile u_regfile (
     .clk_i,
@@ -87,10 +91,10 @@ module arm7tdmi_core
     .pc_exec_i(pc_q),
     .raddr_a_i(rn),
     .raddr_b_i(rm),
-    .raddr_c_i(rd),
+    .raddr_c_i(decoded.register_shift ? decoded.rs : rd),
     .rdata_a_o(rn_data),
     .rdata_b_o(rm_data),
-    .rdata_c_o(rd_data),
+    .rdata_c_o(rs_data),
     .we_i(reg_we),
     .waddr_i(reg_waddr),
     .wdata_i(reg_wdata),
@@ -117,6 +121,7 @@ module arm7tdmi_core
     .value_i(rm_data),
     .shift_i(shift_type),
     .amount_i(shift_amount),
+    .register_shift_i(decoded.register_shift),
     .carry_i(flags.c),
     .result_o(shifted_rm),
     .carry_o(shifted_rm_carry)
@@ -137,7 +142,7 @@ module arm7tdmi_core
   always_comb begin
     alu_op                = decoded.alu_op;
     shift_type            = decoded.shift_type;
-    shift_amount          = {3'b000, decoded.shift_imm};
+    shift_amount          = decoded.register_shift ? rs_shift_amount : {3'b000, decoded.shift_imm};
     alu_b                 = shifted_rm;
     shifter_carry         = shifted_rm_carry;
     supported_execute     = decoded.supported;
@@ -209,7 +214,7 @@ module arm7tdmi_core
           if (!cond_pass) begin
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
-          end else if (decoded.op_class == ARM_OP_DATA_PROCESSING && !decoded.register_shift) begin
+          end else if (decoded.op_class == ARM_OP_DATA_PROCESSING) begin
             if (alu_write_result) begin
               if (rd == 4'd15) begin
                 pc_q <= alu_result & 32'hFFFF_FFFC;
@@ -257,5 +262,5 @@ module arm7tdmi_core
   // Interrupt inputs are intentionally part of the public interface from day one.
   // Exception entry is not implemented until the basic ARM/Thumb datapath is stable.
   logic unused_interrupts;
-  assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^rd_data ^ ^spsr ^ ^decoded.rs;
+  assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^spsr ^ unused_rs_upper;
 endmodule

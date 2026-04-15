@@ -25,6 +25,9 @@ module tb_arm7tdmi_core_smoke
 
   int r0_seen;
   int r1_seen;
+  int r2_seen;
+  int r3_seen;
+  int r4_seen;
   int branch_seen;
 
   arm7tdmi_core dut (
@@ -55,8 +58,11 @@ module tb_arm7tdmi_core_smoke
   always_comb begin
     unique case (bus_addr)
       32'h0000_0000: bus_rdata = 32'hE3A0_0001; // MOV r0, #1
-      32'h0000_0004: bus_rdata = 32'hE280_1002; // ADD r1, r0, #2
-      32'h0000_0008: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_0004: bus_rdata = 32'hE3A0_2002; // MOV r2, #2
+      32'h0000_0008: bus_rdata = 32'hE3A0_3001; // MOV r3, #1
+      32'h0000_000C: bus_rdata = 32'hE080_1312; // ADD r1, r0, r2, LSL r3
+      32'h0000_0010: bus_rdata = 32'hE3A0_4102; // MOV r4, #0x80000000
+      32'h0000_0014: bus_rdata = 32'hEAFF_FFFE; // B .
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
     endcase
   end
@@ -68,6 +74,9 @@ module tb_arm7tdmi_core_smoke
     fiq = 1'b0;
     r0_seen = 0;
     r1_seen = 0;
+    r2_seen = 0;
+    r3_seen = 0;
+    r4_seen = 0;
     branch_seen = 0;
 
     repeat (2) @(posedge clk);
@@ -101,11 +110,23 @@ module tb_arm7tdmi_core_smoke
         r0_seen++;
       end
 
-      if (debug_reg_we && debug_reg_waddr == 4'd1 && debug_reg_wdata == 32'h0000_0003) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd1 && debug_reg_wdata == 32'h0000_0005) begin
         r1_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_0008) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd2 && debug_reg_wdata == 32'h0000_0002) begin
+        r2_seen++;
+      end
+
+      if (debug_reg_we && debug_reg_waddr == 4'd3 && debug_reg_wdata == 32'h0000_0001) begin
+        r3_seen++;
+      end
+
+      if (debug_reg_we && debug_reg_waddr == 4'd4 && debug_reg_wdata == 32'h8000_0000) begin
+        r4_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_0014) begin
         branch_seen++;
       end
     end
@@ -115,7 +136,19 @@ module tb_arm7tdmi_core_smoke
     end
 
     if (r1_seen != 1) begin
-      $fatal(1, "expected one r1 write of 3, saw %0d", r1_seen);
+      $fatal(1, "expected one r1 write of 5, saw %0d", r1_seen);
+    end
+
+    if (r2_seen != 1) begin
+      $fatal(1, "expected one r2 write of 2, saw %0d", r2_seen);
+    end
+
+    if (r3_seen != 1) begin
+      $fatal(1, "expected one r3 write of 1, saw %0d", r3_seen);
+    end
+
+    if (r4_seen != 1) begin
+      $fatal(1, "expected one r4 write of 0x80000000, saw %0d", r4_seen);
     end
 
     if (branch_seen < 2) begin

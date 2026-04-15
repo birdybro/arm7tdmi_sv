@@ -59,7 +59,7 @@ module arm7tdmi_arm_decode
           decoded_o.op_class = ARM_OP_PSR_TRANSFER;
         end else if (!(instr_i[7:4] == 4'b1001)) begin
           decoded_o.op_class = ARM_OP_DATA_PROCESSING;
-          decoded_o.supported = !decoded_o.register_shift;
+          decoded_o.supported = 1'b1;
         end
       end
 

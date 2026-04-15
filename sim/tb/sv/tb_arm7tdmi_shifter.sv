@@ -6,6 +6,7 @@ module tb_arm7tdmi_shifter
   logic [31:0] value;
   arm_shift_t  shift;
   logic [7:0]  amount;
+  logic        register_shift;
   logic        carry_in;
   logic [31:0] result;
   logic        carry_out;
@@ -14,6 +15,7 @@ module tb_arm7tdmi_shifter
     .value_i(value),
     .shift_i(shift),
     .amount_i(amount),
+    .register_shift_i(register_shift),
     .carry_i(carry_in),
     .result_o(result),
     .carry_o(carry_out)
@@ -23,6 +25,7 @@ module tb_arm7tdmi_shifter
       input logic [31:0] value_t,
       input arm_shift_t  shift_t,
       input logic [7:0]  amount_t,
+      input logic        register_shift_t,
       input logic        carry_t,
       input logic [31:0] expected_result,
       input logic        expected_carry
@@ -30,6 +33,7 @@ module tb_arm7tdmi_shifter
     value = value_t;
     shift = shift_t;
     amount = amount_t;
+    register_shift = register_shift_t;
     carry_in = carry_t;
     #1;
     if (result !== expected_result || carry_out !== expected_carry) begin
@@ -39,28 +43,31 @@ module tb_arm7tdmi_shifter
   endtask
 
   initial begin
-    check(32'h8000_0001, SHIFT_LSL, 8'd0, 1'b1, 32'h8000_0001, 1'b1);
-    check(32'h8000_0001, SHIFT_LSL, 8'd1, 1'b0, 32'h0000_0002, 1'b1);
-    check(32'h8000_0001, SHIFT_LSL, 8'd31, 1'b0, 32'h8000_0000, 1'b0);
-    check(32'h8000_0001, SHIFT_LSL, 8'd32, 1'b0, 32'h0000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_LSL, 8'd33, 1'b1, 32'h0000_0000, 1'b0);
+    check(32'h8000_0001, SHIFT_LSL, 8'd0, 1'b0, 1'b1, 32'h8000_0001, 1'b1);
+    check(32'h8000_0001, SHIFT_LSL, 8'd1, 1'b0, 1'b0, 32'h0000_0002, 1'b1);
+    check(32'h8000_0001, SHIFT_LSL, 8'd31, 1'b0, 1'b0, 32'h8000_0000, 1'b0);
+    check(32'h8000_0001, SHIFT_LSL, 8'd32, 1'b0, 1'b0, 32'h0000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_LSL, 8'd33, 1'b0, 1'b1, 32'h0000_0000, 1'b0);
 
-    check(32'h8000_0001, SHIFT_LSR, 8'd0, 1'b0, 32'h0000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_LSR, 8'd1, 1'b0, 32'h4000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_LSR, 8'd31, 1'b0, 32'h0000_0001, 1'b0);
-    check(32'h8000_0001, SHIFT_LSR, 8'd32, 1'b0, 32'h0000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_LSR, 8'd33, 1'b0, 32'h0000_0000, 1'b0);
+    check(32'h8000_0001, SHIFT_LSR, 8'd0, 1'b0, 1'b0, 32'h0000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_LSR, 8'd0, 1'b1, 1'b0, 32'h8000_0001, 1'b0);
+    check(32'h8000_0001, SHIFT_LSR, 8'd1, 1'b0, 1'b0, 32'h4000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_LSR, 8'd31, 1'b0, 1'b0, 32'h0000_0001, 1'b0);
+    check(32'h8000_0001, SHIFT_LSR, 8'd32, 1'b0, 1'b0, 32'h0000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_LSR, 8'd33, 1'b0, 1'b0, 32'h0000_0000, 1'b0);
 
-    check(32'h8000_0001, SHIFT_ASR, 8'd0, 1'b0, 32'hFFFF_FFFF, 1'b1);
-    check(32'h8000_0001, SHIFT_ASR, 8'd1, 1'b0, 32'hC000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_ASR, 8'd31, 1'b0, 32'hFFFF_FFFF, 1'b0);
-    check(32'h7FFF_FFFF, SHIFT_ASR, 8'd32, 1'b0, 32'h0000_0000, 1'b0);
+    check(32'h8000_0001, SHIFT_ASR, 8'd0, 1'b0, 1'b0, 32'hFFFF_FFFF, 1'b1);
+    check(32'h8000_0001, SHIFT_ASR, 8'd0, 1'b1, 1'b0, 32'h8000_0001, 1'b0);
+    check(32'h8000_0001, SHIFT_ASR, 8'd1, 1'b0, 1'b0, 32'hC000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_ASR, 8'd31, 1'b0, 1'b0, 32'hFFFF_FFFF, 1'b0);
+    check(32'h7FFF_FFFF, SHIFT_ASR, 8'd32, 1'b0, 1'b0, 32'h0000_0000, 1'b0);
 
-    check(32'h8000_0001, SHIFT_ROR, 8'd0, 1'b0, 32'h4000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_ROR, 8'd0, 1'b1, 32'hC000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_ROR, 8'd1, 1'b0, 32'hC000_0000, 1'b1);
-    check(32'h8000_0001, SHIFT_ROR, 8'd4, 1'b0, 32'h1800_0000, 1'b0);
-    check(32'h8000_0001, SHIFT_ROR, 8'd32, 1'b0, 32'h8000_0001, 1'b1);
+    check(32'h8000_0001, SHIFT_ROR, 8'd0, 1'b0, 1'b0, 32'h4000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_ROR, 8'd0, 1'b0, 1'b1, 32'hC000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_ROR, 8'd0, 1'b1, 1'b0, 32'h8000_0001, 1'b0);
+    check(32'h8000_0001, SHIFT_ROR, 8'd1, 1'b0, 1'b0, 32'hC000_0000, 1'b1);
+    check(32'h8000_0001, SHIFT_ROR, 8'd4, 1'b0, 1'b0, 32'h1800_0000, 1'b0);
+    check(32'h8000_0001, SHIFT_ROR, 8'd32, 1'b1, 1'b0, 32'h8000_0001, 1'b1);
 
     $display("tb_arm7tdmi_shifter passed");
     $finish;
