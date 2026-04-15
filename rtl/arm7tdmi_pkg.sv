@@ -120,6 +120,7 @@ package arm7tdmi_pkg;
     logic          ls_load;
     logic [11:0]   ls_offset12;
     logic          mul_accumulate;
+    logic          mul_long_signed;
     logic          supported;
   } arm_decoded_t;
 

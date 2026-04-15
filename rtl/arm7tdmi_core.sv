@@ -31,7 +31,8 @@ module arm7tdmi_core
     ST_FETCH,
     ST_EXECUTE,
     ST_MEM,
-    ST_MEM_WB
+    ST_MEM_WB,
+    ST_MUL64_HI
   } state_t;
 
   state_t state_q;
@@ -47,6 +48,8 @@ module arm7tdmi_core
   logic [3:0]  mem_rd_q;
   logic [31:0] mem_wdata_q;
   logic [31:0] mem_wbdata_q;
+  logic [3:0]  mul64_hi_waddr_q;
+  logic [31:0] mul64_hi_wdata_q;
 
   logic [3:0] rn;
   logic [3:0] rd;
@@ -84,6 +87,7 @@ module arm7tdmi_core
   logic        alu_write_result;
   logic        alu_arithmetic;
   logic [31:0] mul_result;
+  logic [63:0] mul64_result;
   arm_flags_t  mul_flags;
 
   logic        supported_execute;
@@ -171,9 +175,12 @@ module arm7tdmi_core
     ls_addr               = decoded.ls_up ? rn_data + ls_offset : rn_data - ls_offset;
     ls_transfer_addr      = decoded.ls_pre_index ? ls_addr : rn_data;
     mul_result            = (rm_data * rs_data) + (decoded.mul_accumulate ? rn_data : 32'h0000_0000);
+    mul64_result          = decoded.mul_long_signed ? 64'(signed'(rm_data) * signed'(rs_data)) :
+                                                       64'(rm_data) * 64'(rs_data);
     mul_flags             = flags;
-    mul_flags.n           = mul_result[31];
-    mul_flags.z           = mul_result == 32'h0000_0000;
+    mul_flags.n           = (decoded.op_class == ARM_OP_LONG_MULTIPLY) ? mul64_result[63] : mul_result[31];
+    mul_flags.z           = (decoded.op_class == ARM_OP_LONG_MULTIPLY) ? (mul64_result == 64'h0) :
+                                                                      (mul_result == 32'h0000_0000);
 
     if (decoded.immediate_operand) begin
       alu_b = (32'({24'h0, decoded.imm8}) >> {decoded.rotate_imm, 1'b0}) |
@@ -220,6 +227,8 @@ module arm7tdmi_core
       mem_rd_q         <= 4'h0;
       mem_wdata_q      <= 32'h0000_0000;
       mem_wbdata_q     <= 32'h0000_0000;
+      mul64_hi_waddr_q <= 4'h0;
+      mul64_hi_wdata_q <= 32'h0000_0000;
       reg_we           <= 1'b0;
       reg_waddr        <= 4'h0;
       reg_wdata        <= 32'h0000_0000;
@@ -304,6 +313,19 @@ module arm7tdmi_core
 
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
+          end else if (decoded.op_class == ARM_OP_LONG_MULTIPLY) begin
+            reg_we    <= 1'b1;
+            reg_waddr <= rd;
+            reg_wdata <= mul64_result[31:0];
+            mul64_hi_waddr_q <= rn;
+            mul64_hi_wdata_q <= mul64_result[63:32];
+
+            if (decoded.set_flags) begin
+              cpsr_we    <= 1'b1;
+              cpsr_wdata <= cpsr_with_flags(cpsr, mul_flags);
+            end
+
+            state_q <= ST_MUL64_HI;
           end else if (decoded.op_class == ARM_OP_SINGLE_DATA_TRANSFER) begin
             mem_addr_q  <= ls_transfer_addr;
             mem_write_q <= !decoded.ls_load;
@@ -362,6 +384,17 @@ module arm7tdmi_core
           retired_o <= 1'b1;
           pc_q <= pc_q + 32'd4;
           next_fetch_seq_q <= 1'b0;
+          state_q <= ST_FETCH;
+        end
+
+        ST_MUL64_HI: begin
+          reg_we    <= 1'b1;
+          reg_waddr <= mul64_hi_waddr_q;
+          reg_wdata <= mul64_hi_wdata_q;
+
+          retired_o <= 1'b1;
+          pc_q <= pc_q + 32'd4;
+          next_fetch_seq_q <= 1'b1;
           state_q <= ST_FETCH;
         end
 
