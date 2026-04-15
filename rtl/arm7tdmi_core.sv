@@ -26,7 +26,7 @@ module arm7tdmi_core
   output logic           retired_o,
   output logic           unsupported_o
 );
-  typedef enum logic [2:0] {
+  typedef enum logic [3:0] {
     ST_RESET,
     ST_FETCH,
     ST_EXECUTE,
@@ -34,7 +34,8 @@ module arm7tdmi_core
     ST_MEM_WB,
     ST_MUL64_HI,
     ST_SWAP_WRITE,
-    ST_SWAP_WB
+    ST_SWAP_WB,
+    ST_BLOCK_MEM
   } state_t;
 
   state_t state_q;
@@ -53,12 +54,16 @@ module arm7tdmi_core
   logic [3:0]  mem_rd_q;
   logic [31:0] mem_wdata_q;
   logic [31:0] mem_wbdata_q;
+  logic [15:0] block_reglist_q;
+  logic [3:0]  block_reg_q;
+  logic        block_load_q;
   logic [3:0]  mul64_hi_waddr_q;
   logic [31:0] mul64_hi_wdata_q;
 
   logic [3:0] rn;
   logic [3:0] rd;
   logic [3:0] rm;
+  logic [3:0] raddr_c;
   arm_decoded_t decoded;
   logic [31:0] rn_data;
   logic [31:0] rm_data;
@@ -104,6 +109,18 @@ module arm7tdmi_core
   logic [31:0] ls_addr;
   logic [31:0] ls_transfer_addr;
   logic [31:0] hword_addr;
+  logic [15:0] block_next_reglist;
+  logic [3:0]  block_next_reg;
+  logic        block_last_reg;
+
+  function automatic logic [3:0] first_reg_in_list(input logic [15:0] reglist);
+    first_reg_in_list = 4'd0;
+    for (int idx = 15; idx >= 0; idx--) begin
+      if (reglist[idx]) begin
+        first_reg_in_list = idx[3:0];
+      end
+    end
+  endfunction
 
   assign rn = decoded.rn;
   assign rd = decoded.rd;
@@ -116,6 +133,11 @@ module arm7tdmi_core
   assign unused_ls_modes = decoded.ls_pre_index ^ decoded.ls_byte ^ decoded.ls_writeback;
   assign unused_hword_modes = ^decoded.hword_transfer_type;
   assign unused_psr_modes = ^decoded.psr_field_mask;
+  assign block_next_reglist = block_reglist_q & ~(16'h0001 << block_reg_q);
+  assign block_next_reg = first_reg_in_list(block_next_reglist);
+  assign block_last_reg = block_next_reglist == 16'h0000;
+  assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
+                   ((decoded.register_shift || decoded.op_class == ARM_OP_MULTIPLY) ? decoded.rs : rd);
 
   arm7tdmi_regfile u_regfile (
     .clk_i,
@@ -124,7 +146,7 @@ module arm7tdmi_core
     .pc_exec_i(pc_q),
     .raddr_a_i(rn),
     .raddr_b_i(rm),
-    .raddr_c_i((decoded.register_shift || decoded.op_class == ARM_OP_MULTIPLY) ? decoded.rs : rd),
+    .raddr_c_i(raddr_c),
     .rdata_a_o(rn_data),
     .rdata_b_o(rm_data),
     .rdata_c_o(rs_data),
@@ -210,15 +232,20 @@ module arm7tdmi_core
     end
   end
 
-  assign bus_addr_o  = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_addr_q : pc_q;
-  assign bus_valid_o = (state_q == ST_FETCH) || (state_q == ST_MEM) || (state_q == ST_SWAP_WRITE);
-  assign bus_write_o = ((state_q == ST_MEM) && mem_write_q) || (state_q == ST_SWAP_WRITE);
+  assign bus_addr_o  = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
+                        (state_q == ST_BLOCK_MEM)) ? mem_addr_q : pc_q;
+  assign bus_valid_o = (state_q == ST_FETCH) || (state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
+                       (state_q == ST_BLOCK_MEM);
+  assign bus_write_o = ((state_q == ST_MEM) && mem_write_q) || (state_q == ST_SWAP_WRITE) ||
+                       ((state_q == ST_BLOCK_MEM) && !block_load_q);
   assign bus_size_o  = (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_byte_q) ? BUS_SIZE_BYTE :
                        ((((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_half_q) ? BUS_SIZE_HALF :
                                                                                                BUS_SIZE_WORD);
-  assign bus_cycle_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? BUS_CYCLE_NONSEQ :
-                                             (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
-  assign bus_wdata_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_wdata_q : 32'h0000_0000;
+  assign bus_cycle_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
+                        (state_q == ST_BLOCK_MEM)) ? BUS_CYCLE_NONSEQ :
+                                                    (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
+  assign bus_wdata_o = (state_q == ST_BLOCK_MEM) ? rs_data :
+                       (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_wdata_q : 32'h0000_0000);
 
   assign debug_pc_o   = pc_q;
   assign debug_cpsr_o = cpsr;
@@ -244,6 +271,9 @@ module arm7tdmi_core
       mem_rd_q         <= 4'h0;
       mem_wdata_q      <= 32'h0000_0000;
       mem_wbdata_q     <= 32'h0000_0000;
+      block_reglist_q  <= 16'h0000;
+      block_reg_q      <= 4'h0;
+      block_load_q     <= 1'b0;
       mul64_hi_waddr_q <= 4'h0;
       mul64_hi_wdata_q <= 32'h0000_0000;
       reg_we           <= 1'b0;
@@ -279,7 +309,9 @@ module arm7tdmi_core
         ST_EXECUTE: begin
           retired_o <= cond_pass && supported_execute &&
                        (decoded.op_class != ARM_OP_SINGLE_DATA_TRANSFER) &&
-                       (decoded.op_class != ARM_OP_HALFWORD_TRANSFER);
+                       (decoded.op_class != ARM_OP_HALFWORD_TRANSFER) &&
+                       (decoded.op_class != ARM_OP_BLOCK_DATA_TRANSFER) &&
+                       (decoded.op_class != ARM_OP_SWAP);
           state_q <= ST_FETCH;
 
           if (!cond_pass) begin
@@ -398,6 +430,12 @@ module arm7tdmi_core
             mem_wdata_q <= decoded.ls_byte ? {24'h0, rm_data[7:0]} : rm_data;
             mem_wbdata_q <= 32'h0000_0000;
             state_q     <= ST_MEM;
+          end else if (decoded.op_class == ARM_OP_BLOCK_DATA_TRANSFER) begin
+            mem_addr_q <= rn_data;
+            block_reglist_q <= decoded.block_reglist;
+            block_reg_q <= first_reg_in_list(decoded.block_reglist);
+            block_load_q <= decoded.ls_load;
+            state_q <= ST_BLOCK_MEM;
           end else begin
             unsupported_o <= 1'b1;
             pc_q <= pc_q + 32'd4;
@@ -461,6 +499,27 @@ module arm7tdmi_core
           pc_q <= pc_q + 32'd4;
           next_fetch_seq_q <= 1'b0;
           state_q <= ST_FETCH;
+        end
+
+        ST_BLOCK_MEM: begin
+          if (bus_ready_i) begin
+            if (block_load_q) begin
+              reg_we    <= 1'b1;
+              reg_waddr <= block_reg_q;
+              reg_wdata <= bus_rdata_i;
+            end
+
+            if (block_last_reg) begin
+              retired_o <= 1'b1;
+              pc_q <= pc_q + 32'd4;
+              next_fetch_seq_q <= 1'b0;
+              state_q <= ST_FETCH;
+            end else begin
+              mem_addr_q <= mem_addr_q + 32'd4;
+              block_reglist_q <= block_next_reglist;
+              block_reg_q <= block_next_reg;
+            end
+          end
         end
 
         ST_MEM_WB: begin

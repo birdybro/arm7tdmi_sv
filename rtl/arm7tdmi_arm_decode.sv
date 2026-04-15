@@ -46,6 +46,7 @@ module arm7tdmi_arm_decode
       ls_writeback:      instr_i[21],
       ls_load:           instr_i[20],
       ls_offset12:       instr_i[11:0],
+      block_reglist:     instr_i[15:0],
       mul_accumulate:    instr_i[21],
       mul_long_signed:   instr_i[22],
       hword_transfer_type: instr_i[6:5],
@@ -107,6 +108,9 @@ module arm7tdmi_arm_decode
 
       3'b100: begin
         decoded_o.op_class = ARM_OP_BLOCK_DATA_TRANSFER;
+        decoded_o.supported = !instr_i[24] && instr_i[23] && !instr_i[22] && !instr_i[21] &&
+                              (instr_i[19:16] != 4'd15) && (instr_i[15:0] != 16'h0000) &&
+                              !instr_i[15];
       end
 
       3'b101: begin

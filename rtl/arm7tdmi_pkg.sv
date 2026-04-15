@@ -119,6 +119,7 @@ package arm7tdmi_pkg;
     logic          ls_writeback;
     logic          ls_load;
     logic [11:0]   ls_offset12;
+    logic [15:0]   block_reglist;
     logic          mul_accumulate;
     logic          mul_long_signed;
     logic [1:0]    hword_transfer_type;
