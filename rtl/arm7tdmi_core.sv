@@ -40,6 +40,7 @@ module arm7tdmi_core
   logic [31:0] mem_addr_q;
   logic        mem_write_q;
   logic        mem_load_q;
+  logic        mem_byte_q;
   logic [3:0]  mem_rd_q;
   logic [31:0] mem_wdata_q;
 
@@ -180,7 +181,7 @@ module arm7tdmi_core
   assign bus_addr_o  = (state_q == ST_MEM) ? mem_addr_q : pc_q;
   assign bus_valid_o = (state_q == ST_FETCH) || (state_q == ST_MEM);
   assign bus_write_o = (state_q == ST_MEM) && mem_write_q;
-  assign bus_size_o  = BUS_SIZE_WORD;
+  assign bus_size_o  = ((state_q == ST_MEM) && mem_byte_q) ? BUS_SIZE_BYTE : BUS_SIZE_WORD;
   assign bus_cycle_o = (state_q == ST_MEM) ? BUS_CYCLE_NONSEQ :
                                              (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
   assign bus_wdata_o = (state_q == ST_MEM) ? mem_wdata_q : 32'h0000_0000;
@@ -200,6 +201,7 @@ module arm7tdmi_core
       mem_addr_q       <= 32'h0000_0000;
       mem_write_q      <= 1'b0;
       mem_load_q       <= 1'b0;
+      mem_byte_q       <= 1'b0;
       mem_rd_q         <= 4'h0;
       mem_wdata_q      <= 32'h0000_0000;
       reg_we           <= 1'b0;
@@ -278,8 +280,9 @@ module arm7tdmi_core
             mem_addr_q  <= ls_addr;
             mem_write_q <= !decoded.ls_load;
             mem_load_q  <= decoded.ls_load;
+            mem_byte_q  <= decoded.ls_byte;
             mem_rd_q    <= rd;
-            mem_wdata_q <= rs_data;
+            mem_wdata_q <= decoded.ls_byte ? {24'h0, rs_data[7:0]} : rs_data;
             state_q     <= ST_MEM;
           end else begin
             unsupported_o <= 1'b1;
@@ -293,7 +296,7 @@ module arm7tdmi_core
             if (mem_load_q) begin
               reg_we    <= 1'b1;
               reg_waddr <= mem_rd_q;
-              reg_wdata <= bus_rdata_i;
+              reg_wdata <= mem_byte_q ? {24'h0, bus_rdata_i[7:0]} : bus_rdata_i;
             end
             retired_o <= 1'b1;
             pc_q <= pc_q + 32'd4;

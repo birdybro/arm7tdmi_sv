@@ -93,7 +93,10 @@ module tb_arm7tdmi_arm_decode
     end
 
     decode(32'hE5D0_1000); // LDRB r1, [r0]
-    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b0);
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (!decoded.ls_byte || !decoded.ls_load) begin
+      $fatal(1, "LDRB immediate decode mismatch");
+    end
 
     decode(32'hE000_0091); // MUL r0, r1, r0
     expect_class(ARM_OP_MULTIPLY, 1'b0);
