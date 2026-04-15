@@ -178,6 +178,20 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "LDRH immediate decode mismatch");
     end
 
+    decode(32'hE1D0_30D4); // LDRSB r3, [r0, #4]
+    expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
+    if (!decoded.ls_load || decoded.hword_transfer_type !== 2'b10 ||
+        decoded.hword_offset8 !== 8'h04) begin
+      $fatal(1, "LDRSB immediate decode mismatch");
+    end
+
+    decode(32'hE1D0_40F6); // LDRSH r4, [r0, #6]
+    expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
+    if (!decoded.ls_load || decoded.hword_transfer_type !== 2'b11 ||
+        decoded.hword_offset8 !== 8'h06) begin
+      $fatal(1, "LDRSH immediate decode mismatch");
+    end
+
     decode(32'hEF00_0011); // SWI
     expect_class(ARM_OP_SWI, 1'b0);
 

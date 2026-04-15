@@ -27,6 +27,8 @@ module tb_arm7tdmi_core_halfword
   int base_seen;
   int value_seen;
   int load_seen;
+  int signed_byte_seen;
+  int signed_half_seen;
   int store_seen;
   int loop_seen;
 
@@ -61,8 +63,12 @@ module tb_arm7tdmi_core_halfword
       32'h0000_0004: bus_rdata = 32'hE3A0_10AB; // MOV r1, #0xab
       32'h0000_0008: bus_rdata = 32'hE1C0_10B2; // STRH r1, [r0, #2]
       32'h0000_000C: bus_rdata = 32'hE1D0_20B2; // LDRH r2, [r0, #2]
-      32'h0000_0010: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_0010: bus_rdata = 32'hE1D0_30D4; // LDRSB r3, [r0, #4]
+      32'h0000_0014: bus_rdata = 32'hE1D0_40F6; // LDRSH r4, [r0, #6]
+      32'h0000_0018: bus_rdata = 32'hEAFF_FFFE; // B .
       32'h0000_0082: bus_rdata = {16'h0, halfword};
+      32'h0000_0084: bus_rdata = 32'h0000_0080;
+      32'h0000_0086: bus_rdata = 32'h0000_8001;
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
     endcase
   end
@@ -93,6 +99,8 @@ module tb_arm7tdmi_core_halfword
     base_seen = 0;
     value_seen = 0;
     load_seen = 0;
+    signed_byte_seen = 0;
+    signed_half_seen = 0;
     store_seen = 0;
     loop_seen = 0;
 
@@ -103,8 +111,8 @@ module tb_arm7tdmi_core_halfword
       @(posedge clk);
       #1;
 
-      if (bus_valid && !(bus_size inside {BUS_SIZE_HALF, BUS_SIZE_WORD})) begin
-        $fatal(1, "halfword smoke expected instruction word or data halfword transfer");
+      if (bus_valid && !(bus_size inside {BUS_SIZE_BYTE, BUS_SIZE_HALF, BUS_SIZE_WORD})) begin
+        $fatal(1, "halfword smoke expected instruction word, data byte, or data halfword transfer");
       end
 
       if (unsupported) begin
@@ -123,7 +131,15 @@ module tb_arm7tdmi_core_halfword
         load_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_0010) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd3 && debug_reg_wdata == 32'hFFFF_FF80) begin
+        signed_byte_seen++;
+      end
+
+      if (debug_reg_we && debug_reg_waddr == 4'd4 && debug_reg_wdata == 32'hFFFF_8001) begin
+        signed_half_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_0018) begin
         loop_seen++;
       end
     end
@@ -132,9 +148,9 @@ module tb_arm7tdmi_core_halfword
       $fatal(1, "expected setup writes once, saw base=%0d value=%0d", base_seen, value_seen);
     end
 
-    if (store_seen != 1 || load_seen != 1) begin
-      $fatal(1, "expected one halfword store and load, saw store=%0d load=%0d",
-             store_seen, load_seen);
+    if (store_seen != 1 || load_seen != 1 || signed_byte_seen != 1 || signed_half_seen != 1) begin
+      $fatal(1, "expected one halfword store, unsigned load, signed byte, and signed half load; saw store=%0d load=%0d sb=%0d sh=%0d",
+             store_seen, load_seen, signed_byte_seen, signed_half_seen);
     end
 
     if (loop_seen < 2) begin

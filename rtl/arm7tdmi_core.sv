@@ -44,6 +44,7 @@ module arm7tdmi_core
   logic        mem_load_q;
   logic        mem_byte_q;
   logic        mem_half_q;
+  logic        mem_signed_q;
   logic        mem_wb_q;
   logic [3:0]  mem_rn_q;
   logic [3:0]  mem_rd_q;
@@ -230,6 +231,7 @@ module arm7tdmi_core
       mem_load_q       <= 1'b0;
       mem_byte_q       <= 1'b0;
       mem_half_q       <= 1'b0;
+      mem_signed_q     <= 1'b0;
       mem_wb_q         <= 1'b0;
       mem_rn_q         <= 4'h0;
       mem_rd_q         <= 4'h0;
@@ -341,6 +343,7 @@ module arm7tdmi_core
             mem_load_q  <= decoded.ls_load;
             mem_byte_q  <= decoded.ls_byte;
             mem_half_q  <= 1'b0;
+            mem_signed_q <= 1'b0;
             mem_wb_q    <= decoded.ls_writeback || !decoded.ls_pre_index;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
@@ -351,8 +354,9 @@ module arm7tdmi_core
             mem_addr_q  <= hword_addr;
             mem_write_q <= !decoded.ls_load;
             mem_load_q  <= decoded.ls_load;
-            mem_byte_q  <= 1'b0;
-            mem_half_q  <= 1'b1;
+            mem_byte_q  <= decoded.hword_transfer_type == 2'b10;
+            mem_half_q  <= decoded.hword_transfer_type != 2'b10;
+            mem_signed_q <= decoded.hword_transfer_type != 2'b01;
             mem_wb_q    <= 1'b0;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
@@ -371,8 +375,11 @@ module arm7tdmi_core
             if (mem_load_q) begin
               reg_we    <= 1'b1;
               reg_waddr <= mem_rd_q;
-              reg_wdata <= mem_byte_q ? {24'h0, bus_rdata_i[7:0]} :
-                                      (mem_half_q ? {16'h0, bus_rdata_i[15:0]} : bus_rdata_i);
+              reg_wdata <= mem_byte_q ? (mem_signed_q ? {{24{bus_rdata_i[7]}}, bus_rdata_i[7:0]} :
+                                                         {24'h0, bus_rdata_i[7:0]}) :
+                                      (mem_half_q ? (mem_signed_q ? {{16{bus_rdata_i[15]}}, bus_rdata_i[15:0]} :
+                                                                    {16'h0, bus_rdata_i[15:0]}) :
+                                                    bus_rdata_i);
 
               if (mem_wb_q) begin
                 state_q <= ST_MEM_WB;
