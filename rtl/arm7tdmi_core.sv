@@ -445,7 +445,7 @@ module arm7tdmi_core
             mem_wbdata_q <= 32'h0000_0000;
             state_q     <= ST_MEM;
           end else if (decoded.op_class == ARM_OP_BLOCK_DATA_TRANSFER) begin
-            mem_addr_q <= rn_data;
+            mem_addr_q <= rn_data + (decoded.ls_pre_index ? 32'd4 : 32'd0);
             block_reglist_q <= decoded.block_reglist;
             block_reg_q <= first_reg_in_list(decoded.block_reglist);
             block_load_q <= decoded.ls_load;

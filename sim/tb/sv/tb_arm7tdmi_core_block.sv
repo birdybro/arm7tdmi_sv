@@ -26,17 +26,24 @@ module tb_arm7tdmi_core_block
   logic [31:0] mem0;
   logic [31:0] mem1;
   logic [31:0] mem2;
+  logic [31:0] mem_ib0;
+  logic [31:0] mem_ib1;
   int base_seen;
   int r1_seen;
   int r2_seen;
   int r3_seen;
   int r7_seen;
   int r7_wb_seen;
+  int r8_seen;
+  int r9_seen;
+  int r10_seen;
+  int r11_seen;
   int r4_seen;
   int r5_seen;
   int r6_seen;
   int r0_wb_seen;
   int stm_seen;
+  int stmib_seen;
   int loop_seen;
 
   arm7tdmi_core dut (
@@ -73,10 +80,16 @@ module tb_arm7tdmi_core_block
       32'h0000_0010: bus_rdata = 32'hE8A0_000E; // STMIA r0!, {r1-r3}
       32'h0000_0014: bus_rdata = 32'hE3A0_7080; // MOV r7, #0x80
       32'h0000_0018: bus_rdata = 32'hE8B7_0070; // LDMIA r7!, {r4-r6}
-      32'h0000_001C: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_001C: bus_rdata = 32'hE3A0_80A0; // MOV r8, #0xa0
+      32'h0000_0020: bus_rdata = 32'hE988_0006; // STMIB r8, {r1-r2}
+      32'h0000_0024: bus_rdata = 32'hE3A0_90A0; // MOV r9, #0xa0
+      32'h0000_0028: bus_rdata = 32'hE999_0C00; // LDMIB r9, {r10-r11}
+      32'h0000_002C: bus_rdata = 32'hEAFF_FFFE; // B .
       32'h0000_0080: bus_rdata = mem0;
       32'h0000_0084: bus_rdata = mem1;
       32'h0000_0088: bus_rdata = mem2;
+      32'h0000_00A4: bus_rdata = mem_ib0;
+      32'h0000_00A8: bus_rdata = mem_ib1;
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
     endcase
   end
@@ -109,6 +122,20 @@ module tb_arm7tdmi_core_block
           mem2 <= bus_wdata;
           stm_seen <= stm_seen + 1;
         end
+        32'h0000_00A4: begin
+          if (bus_wdata !== 32'h0000_0011) begin
+            $fatal(1, "STMIB r1 store mismatch: %08x", bus_wdata);
+          end
+          mem_ib0 <= bus_wdata;
+          stmib_seen <= stmib_seen + 1;
+        end
+        32'h0000_00A8: begin
+          if (bus_wdata !== 32'h0000_0022) begin
+            $fatal(1, "STMIB r2 store mismatch: %08x", bus_wdata);
+          end
+          mem_ib1 <= bus_wdata;
+          stmib_seen <= stmib_seen + 1;
+        end
         default: begin
           $fatal(1, "unexpected block store address %08x", bus_addr);
         end
@@ -122,17 +149,24 @@ module tb_arm7tdmi_core_block
     mem0 = 32'hCAFE_0000;
     mem1 = 32'hCAFE_0001;
     mem2 = 32'hCAFE_0002;
+    mem_ib0 = 32'hCAFE_0003;
+    mem_ib1 = 32'hCAFE_0004;
     base_seen = 0;
     r1_seen = 0;
     r2_seen = 0;
     r3_seen = 0;
     r7_seen = 0;
     r7_wb_seen = 0;
+    r8_seen = 0;
+    r9_seen = 0;
+    r10_seen = 0;
+    r11_seen = 0;
     r4_seen = 0;
     r5_seen = 0;
     r6_seen = 0;
     r0_wb_seen = 0;
     stm_seen = 0;
+    stmib_seen = 0;
     loop_seen = 0;
 
     repeat (2) @(posedge clk);
@@ -167,6 +201,12 @@ module tb_arm7tdmi_core_block
       if (debug_reg_we && debug_reg_waddr == 4'd7 && debug_reg_wdata == 32'h0000_008C) begin
         r7_wb_seen++;
       end
+      if (debug_reg_we && debug_reg_waddr == 4'd8 && debug_reg_wdata == 32'h0000_00A0) begin
+        r8_seen++;
+      end
+      if (debug_reg_we && debug_reg_waddr == 4'd9 && debug_reg_wdata == 32'h0000_00A0) begin
+        r9_seen++;
+      end
       if (debug_reg_we && debug_reg_waddr == 4'd4 && debug_reg_wdata == 32'h0000_0011) begin
         r4_seen++;
       end
@@ -176,7 +216,13 @@ module tb_arm7tdmi_core_block
       if (debug_reg_we && debug_reg_waddr == 4'd6 && debug_reg_wdata == 32'h0000_0033) begin
         r6_seen++;
       end
-      if (retired && debug_pc == 32'h0000_001C) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd10 && debug_reg_wdata == 32'h0000_0011) begin
+        r10_seen++;
+      end
+      if (debug_reg_we && debug_reg_waddr == 4'd11 && debug_reg_wdata == 32'h0000_0022) begin
+        r11_seen++;
+      end
+      if (retired && debug_pc == 32'h0000_002C) begin
         loop_seen++;
       end
     end
@@ -190,6 +236,11 @@ module tb_arm7tdmi_core_block
       $fatal(1, "expected three STMIA stores, saw %0d", stm_seen);
     end
 
+    if (stmib_seen != 2 || r8_seen != 1 || r9_seen != 1) begin
+      $fatal(1, "expected STMIB stores and IB setup writes, saw stores=%0d r8=%0d r9=%0d",
+             stmib_seen, r8_seen, r9_seen);
+    end
+
     if (r0_wb_seen != 1 || r7_seen != 1 || r7_wb_seen != 1) begin
       $fatal(1, "expected block writeback, saw r0_wb=%0d r7=%0d r7_wb=%0d",
              r0_wb_seen, r7_seen, r7_wb_seen);
@@ -198,6 +249,10 @@ module tb_arm7tdmi_core_block
     if (r4_seen != 1 || r5_seen != 1 || r6_seen != 1) begin
       $fatal(1, "expected LDMIA loads once, saw r4=%0d r5=%0d r6=%0d",
              r4_seen, r5_seen, r6_seen);
+    end
+
+    if (r10_seen != 1 || r11_seen != 1) begin
+      $fatal(1, "expected LDMIB loads once, saw r10=%0d r11=%0d", r10_seen, r11_seen);
     end
 
     if (loop_seen < 2) begin
