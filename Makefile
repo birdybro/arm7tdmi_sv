@@ -10,12 +10,12 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 	rtl/arm7tdmi_regfile.sv \
 	rtl/arm7tdmi_core.sv
 
-.PHONY: lint test tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem clean
+.PHONY: lint test tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset clean
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
 
-test: lint tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem
+test: lint tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset
 
 tb-cond:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_cond $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_cond.sv
@@ -48,6 +48,10 @@ tb-core-branch:
 tb-core-mem:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_mem
+
+tb-core-mem-regoffset:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem_regoffset $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem_regoffset.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_mem_regoffset
 
 clean:
 	rm -rf $(BUILD_DIR)

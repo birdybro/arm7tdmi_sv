@@ -87,6 +87,7 @@ module arm7tdmi_core
   logic        supported_execute;
   logic [31:0] next_pc;
   logic [31:0] bx_cpsr;
+  logic [31:0] ls_offset;
   logic [31:0] ls_addr;
   logic [31:0] ls_transfer_addr;
 
@@ -164,8 +165,8 @@ module arm7tdmi_core
     supported_execute     = decoded.supported;
     next_pc               = pc_q + 32'd4;
     bx_cpsr               = cpsr;
-    ls_addr               = decoded.ls_up ? rn_data + {20'h0, decoded.ls_offset12} :
-                                            rn_data - {20'h0, decoded.ls_offset12};
+    ls_offset             = decoded.immediate_operand ? shifted_rm : {20'h0, decoded.ls_offset12};
+    ls_addr               = decoded.ls_up ? rn_data + ls_offset : rn_data - ls_offset;
     ls_transfer_addr      = decoded.ls_pre_index ? ls_addr : rn_data;
 
     if (decoded.immediate_operand) begin

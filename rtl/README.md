@@ -37,6 +37,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-regfile`
 - `make tb-core-branch`
 - `make tb-core-mem`
+- `make tb-core-mem-regoffset`
 - `make test`
 
 ## Implemented So Far
@@ -47,7 +48,7 @@ The repository Makefile provides the current regression surface:
 - Immediate operands and register operands with immediate shifts.
 - ARM branch and branch-with-link.
 - ARM branch-and-exchange to ARM-state targets.
-- ARM single data transfer foundation: immediate pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.
+- ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.
 

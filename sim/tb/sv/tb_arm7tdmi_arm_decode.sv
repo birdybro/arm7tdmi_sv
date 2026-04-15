@@ -116,6 +116,20 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "LDR post-index immediate decode mismatch");
     end
 
+    decode(32'hE790_9001); // LDR r9, [r0, r1]
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (!decoded.immediate_operand || decoded.rm !== 4'd1 || decoded.rd !== 4'd9 ||
+        decoded.shift_imm !== 5'd0 || decoded.shift_type !== SHIFT_LSL) begin
+      $fatal(1, "LDR register-offset decode mismatch");
+    end
+
+    decode(32'hE780_1104); // STR r1, [r0, r4, LSL #2]
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (!decoded.immediate_operand || decoded.rm !== 4'd4 ||
+        decoded.shift_imm !== 5'd2 || decoded.shift_type !== SHIFT_LSL) begin
+      $fatal(1, "STR scaled register-offset decode mismatch");
+    end
+
     decode(32'hE5D0_1000); // LDRB r1, [r0]
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
     if (!decoded.ls_byte || !decoded.ls_load) begin
