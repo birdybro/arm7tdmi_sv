@@ -32,7 +32,9 @@ module arm7tdmi_core
     ST_EXECUTE,
     ST_MEM,
     ST_MEM_WB,
-    ST_MUL64_HI
+    ST_MUL64_HI,
+    ST_SWAP_WRITE,
+    ST_SWAP_WB
   } state_t;
 
   state_t state_q;
@@ -45,6 +47,7 @@ module arm7tdmi_core
   logic        mem_byte_q;
   logic        mem_half_q;
   logic        mem_signed_q;
+  logic        mem_swap_q;
   logic        mem_wb_q;
   logic [3:0]  mem_rn_q;
   logic [3:0]  mem_rd_q;
@@ -207,14 +210,15 @@ module arm7tdmi_core
     end
   end
 
-  assign bus_addr_o  = (state_q == ST_MEM) ? mem_addr_q : pc_q;
-  assign bus_valid_o = (state_q == ST_FETCH) || (state_q == ST_MEM);
-  assign bus_write_o = (state_q == ST_MEM) && mem_write_q;
-  assign bus_size_o  = ((state_q == ST_MEM) && mem_byte_q) ? BUS_SIZE_BYTE :
-                       (((state_q == ST_MEM) && mem_half_q) ? BUS_SIZE_HALF : BUS_SIZE_WORD);
-  assign bus_cycle_o = (state_q == ST_MEM) ? BUS_CYCLE_NONSEQ :
+  assign bus_addr_o  = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_addr_q : pc_q;
+  assign bus_valid_o = (state_q == ST_FETCH) || (state_q == ST_MEM) || (state_q == ST_SWAP_WRITE);
+  assign bus_write_o = ((state_q == ST_MEM) && mem_write_q) || (state_q == ST_SWAP_WRITE);
+  assign bus_size_o  = (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_byte_q) ? BUS_SIZE_BYTE :
+                       ((((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_half_q) ? BUS_SIZE_HALF :
+                                                                                               BUS_SIZE_WORD);
+  assign bus_cycle_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? BUS_CYCLE_NONSEQ :
                                              (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
-  assign bus_wdata_o = (state_q == ST_MEM) ? mem_wdata_q : 32'h0000_0000;
+  assign bus_wdata_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_wdata_q : 32'h0000_0000;
 
   assign debug_pc_o   = pc_q;
   assign debug_cpsr_o = cpsr;
@@ -234,6 +238,7 @@ module arm7tdmi_core
       mem_byte_q       <= 1'b0;
       mem_half_q       <= 1'b0;
       mem_signed_q     <= 1'b0;
+      mem_swap_q       <= 1'b0;
       mem_wb_q         <= 1'b0;
       mem_rn_q         <= 4'h0;
       mem_rd_q         <= 4'h0;
@@ -358,6 +363,7 @@ module arm7tdmi_core
             mem_byte_q  <= decoded.ls_byte;
             mem_half_q  <= 1'b0;
             mem_signed_q <= 1'b0;
+            mem_swap_q  <= 1'b0;
             mem_wb_q    <= decoded.ls_writeback || !decoded.ls_pre_index;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
@@ -371,11 +377,26 @@ module arm7tdmi_core
             mem_byte_q  <= decoded.hword_transfer_type == 2'b10;
             mem_half_q  <= decoded.hword_transfer_type != 2'b10;
             mem_signed_q <= decoded.hword_transfer_type != 2'b01;
+            mem_swap_q  <= 1'b0;
             mem_wb_q    <= 1'b0;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
             mem_wdata_q <= {16'h0, rs_data[15:0]};
             mem_wbdata_q <= hword_addr;
+            state_q     <= ST_MEM;
+          end else if (decoded.op_class == ARM_OP_SWAP) begin
+            mem_addr_q  <= rn_data;
+            mem_write_q <= 1'b0;
+            mem_load_q  <= 1'b1;
+            mem_byte_q  <= decoded.ls_byte;
+            mem_half_q  <= 1'b0;
+            mem_signed_q <= 1'b0;
+            mem_swap_q  <= 1'b1;
+            mem_wb_q    <= 1'b0;
+            mem_rn_q    <= rn;
+            mem_rd_q    <= rd;
+            mem_wdata_q <= decoded.ls_byte ? {24'h0, rm_data[7:0]} : rm_data;
+            mem_wbdata_q <= 32'h0000_0000;
             state_q     <= ST_MEM;
           end else begin
             unsupported_o <= 1'b1;
@@ -386,7 +407,12 @@ module arm7tdmi_core
 
         ST_MEM: begin
           if (bus_ready_i) begin
-            if (mem_load_q) begin
+            if (mem_swap_q) begin
+              mem_wbdata_q <= mem_byte_q ? {24'h0, bus_rdata_i[7:0]} : bus_rdata_i;
+              mem_write_q  <= 1'b1;
+              mem_load_q   <= 1'b0;
+              state_q      <= ST_SWAP_WRITE;
+            end else if (mem_load_q) begin
               reg_we    <= 1'b1;
               reg_waddr <= mem_rd_q;
               reg_wdata <= mem_byte_q ? (mem_signed_q ? {{24{bus_rdata_i[7]}}, bus_rdata_i[7:0]} :
@@ -418,6 +444,23 @@ module arm7tdmi_core
               state_q <= ST_FETCH;
             end
           end
+        end
+
+        ST_SWAP_WRITE: begin
+          if (bus_ready_i) begin
+            state_q <= ST_SWAP_WB;
+          end
+        end
+
+        ST_SWAP_WB: begin
+          reg_we    <= 1'b1;
+          reg_waddr <= mem_rd_q;
+          reg_wdata <= mem_wbdata_q;
+
+          retired_o <= 1'b1;
+          pc_q <= pc_q + 32'd4;
+          next_fetch_seq_q <= 1'b0;
+          state_q <= ST_FETCH;
         end
 
         ST_MEM_WB: begin

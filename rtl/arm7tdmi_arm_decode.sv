@@ -74,6 +74,8 @@ module arm7tdmi_arm_decode
           decoded_o.supported = 1'b1;
         end else if (is_swap) begin
           decoded_o.op_class = ARM_OP_SWAP;
+          decoded_o.supported = (instr_i[19:16] != 4'd15) && (instr_i[15:12] != 4'd15) &&
+                                (instr_i[3:0] != 4'd15);
         end else if (is_halfword_transfer) begin
           decoded_o.op_class = ARM_OP_HALFWORD_TRANSFER;
           decoded_o.register_shift = 1'b0;

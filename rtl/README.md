@@ -41,6 +41,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-multiply`
 - `make tb-core-halfword`
 - `make tb-core-psr`
+- `make tb-core-swap`
 - `make test`
 
 ## Implemented So Far
@@ -55,6 +56,7 @@ The repository Makefile provides the current regression surface:
 - ARM non-accumulating long multiply `UMULL`/`SMULL`.
 - ARM immediate halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`.
 - ARM PSR transfers: `MRS Rd, CPSR` and register-form `MSR CPSR_f, Rm`.
+- ARM swap transfers: `SWP` and `SWPB`.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.
@@ -62,7 +64,7 @@ The repository Makefile provides the current regression surface:
 ## Explicit Gaps
 
 - Thumb decode and execution.
-- Block transfer, swap, coprocessor, fuller PSR transfer forms, and remaining load/store edge cases.
+- Block transfer, coprocessor, fuller PSR transfer forms, and remaining load/store edge cases.
 - Register-specified shifts.
 - Exceptions, aborts, IRQ/FIQ entry, and return-from-exception paths.
 - JTAG/EmbeddedICE/debug behavior.
