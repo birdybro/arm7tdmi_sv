@@ -20,6 +20,9 @@ module arm7tdmi_core
 
   output logic [31:0]    debug_pc_o,
   output logic [31:0]    debug_cpsr_o,
+  output logic           debug_reg_we_o,
+  output logic [3:0]     debug_reg_waddr_o,
+  output logic [31:0]    debug_reg_wdata_o,
   output logic           retired_o,
   output logic           unsupported_o
 );
@@ -177,6 +180,9 @@ module arm7tdmi_core
 
   assign debug_pc_o   = pc_q;
   assign debug_cpsr_o = cpsr;
+  assign debug_reg_we_o    = reg_we;
+  assign debug_reg_waddr_o = reg_waddr;
+  assign debug_reg_wdata_o = reg_wdata;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin

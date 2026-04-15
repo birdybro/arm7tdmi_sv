@@ -24,6 +24,17 @@ without changing the core boundary.
 | `arm7tdmi_regfile.sv` | Banked ARM register file foundation, CPSR, and SPSR storage. |
 | `arm7tdmi_core.sv` | Initial fetch/execute top level with a simple memory handshake. |
 
+## Verification Entry Points
+
+The repository Makefile provides the current regression surface:
+
+- `make lint`
+- `make tb-cond`
+- `make tb-shifter`
+- `make tb-alu`
+- `make tb-regfile`
+- `make test`
+
 ## Implemented So Far
 
 - Reset to supervisor mode with IRQ/FIQ masked.
