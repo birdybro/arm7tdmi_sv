@@ -28,6 +28,9 @@ module tb_arm7tdmi_core_smoke
   int r2_seen;
   int r3_seen;
   int r4_seen;
+  int r5_seen;
+  int r6_seen;
+  int r7_seen;
   int branch_seen;
 
   arm7tdmi_core dut (
@@ -62,7 +65,10 @@ module tb_arm7tdmi_core_smoke
       32'h0000_0008: bus_rdata = 32'hE3A0_3001; // MOV r3, #1
       32'h0000_000C: bus_rdata = 32'hE080_1312; // ADD r1, r0, r2, LSL r3
       32'h0000_0010: bus_rdata = 32'hE3A0_4102; // MOV r4, #0x80000000
-      32'h0000_0014: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_0014: bus_rdata = 32'hE3A0_5001; // MOV r5, #1
+      32'h0000_0018: bus_rdata = 32'hE3A0_601F; // MOV r6, #31
+      32'h0000_001C: bus_rdata = 32'hE1B0_7615; // MOVS r7, r5, LSL r6
+      32'h0000_0020: bus_rdata = 32'hEAFF_FFFE; // B .
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
     endcase
   end
@@ -77,12 +83,15 @@ module tb_arm7tdmi_core_smoke
     r2_seen = 0;
     r3_seen = 0;
     r4_seen = 0;
+    r5_seen = 0;
+    r6_seen = 0;
+    r7_seen = 0;
     branch_seen = 0;
 
     repeat (2) @(posedge clk);
     rst_n = 1'b1;
 
-    for (int cycle = 0; cycle < 32; cycle++) begin
+    for (int cycle = 0; cycle < 44; cycle++) begin
       @(posedge clk);
       #1;
 
@@ -126,7 +135,19 @@ module tb_arm7tdmi_core_smoke
         r4_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_0014) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd5 && debug_reg_wdata == 32'h0000_0001) begin
+        r5_seen++;
+      end
+
+      if (debug_reg_we && debug_reg_waddr == 4'd6 && debug_reg_wdata == 32'h0000_001F) begin
+        r6_seen++;
+      end
+
+      if (debug_reg_we && debug_reg_waddr == 4'd7 && debug_reg_wdata == 32'h8000_0000) begin
+        r7_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_0020) begin
         branch_seen++;
       end
     end
@@ -151,12 +172,17 @@ module tb_arm7tdmi_core_smoke
       $fatal(1, "expected one r4 write of 0x80000000, saw %0d", r4_seen);
     end
 
+    if (r5_seen != 1 || r6_seen != 1 || r7_seen != 1) begin
+      $fatal(1, "expected register-shift setup/result writes once, saw r5=%0d r6=%0d r7=%0d",
+             r5_seen, r6_seen, r7_seen);
+    end
+
     if (branch_seen < 2) begin
       $fatal(1, "expected branch loop to retire at least twice, saw %0d", branch_seen);
     end
 
-    if (debug_cpsr[4:0] !== MODE_SVC || debug_cpsr[7] !== 1'b1 || debug_cpsr[6] !== 1'b1) begin
-      $fatal(1, "expected reset CPSR to remain SVC with I/F masked, got %08x", debug_cpsr);
+    if (debug_cpsr !== 32'h8000_00D3) begin
+      $fatal(1, "expected MOVS register shift to set only N flag, got %08x", debug_cpsr);
     end
 
     $display("tb_arm7tdmi_core_smoke passed");

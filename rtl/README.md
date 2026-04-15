@@ -51,6 +51,7 @@ The repository Makefile provides the current regression surface:
 - ARM condition evaluation.
 - ARM data-processing ALU operation set.
 - Immediate operands and register operands with immediate shifts.
+- Register-specified shifts, including shifter carry propagation into flag-setting ALU operations.
 - ARM branch and branch-with-link.
 - ARM branch-and-exchange to ARM-state targets.
 - ARM multiply and multiply-accumulate, including N/Z flag updates for `MULS`.
@@ -67,7 +68,6 @@ The repository Makefile provides the current regression surface:
 
 - Thumb decode and execution.
 - Full block transfer modes, coprocessor, fuller PSR transfer forms, and remaining load/store edge cases.
-- Register-specified shifts.
 - Exceptions, aborts, IRQ/FIQ entry, and return-from-exception paths.
 - JTAG/EmbeddedICE/debug behavior.
 - Cycle-accurate instruction timing.
