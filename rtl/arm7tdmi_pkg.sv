@@ -123,6 +123,8 @@ package arm7tdmi_pkg;
     logic          mul_long_signed;
     logic [1:0]    hword_transfer_type;
     logic [7:0]    hword_offset8;
+    logic          psr_write;
+    logic          psr_use_spsr;
     logic          supported;
   } arm_decoded_t;
 

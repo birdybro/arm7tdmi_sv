@@ -84,6 +84,7 @@ module arm7tdmi_core
   logic        unused_rs_upper;
   logic        unused_ls_modes;
   logic        unused_hword_modes;
+  logic        unused_psr_write;
   arm_shift_t  shift_type;
   logic [31:0] alu_result;
   arm_flags_t  alu_flags;
@@ -111,6 +112,7 @@ module arm7tdmi_core
   assign unused_rs_upper = ^rs_data[31:8];
   assign unused_ls_modes = decoded.ls_pre_index ^ decoded.ls_byte ^ decoded.ls_writeback;
   assign unused_hword_modes = ^decoded.hword_transfer_type;
+  assign unused_psr_write = decoded.psr_write;
 
   arm7tdmi_regfile u_regfile (
     .clk_i,
@@ -337,6 +339,12 @@ module arm7tdmi_core
             end
 
             state_q <= ST_MUL64_HI;
+          end else if (decoded.op_class == ARM_OP_PSR_TRANSFER) begin
+            reg_we    <= 1'b1;
+            reg_waddr <= rd;
+            reg_wdata <= decoded.psr_use_spsr ? spsr : cpsr;
+            pc_q <= pc_q + 32'd4;
+            next_fetch_seq_q <= 1'b1;
           end else if (decoded.op_class == ARM_OP_SINGLE_DATA_TRANSFER) begin
             mem_addr_q  <= ls_transfer_addr;
             mem_write_q <= !decoded.ls_load;
@@ -439,5 +447,5 @@ module arm7tdmi_core
   // Exception entry is not implemented until the basic ARM/Thumb datapath is stable.
   logic unused_interrupts;
   assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^spsr ^ unused_rs_upper ^
-                             unused_ls_modes ^ unused_hword_modes;
+                             unused_ls_modes ^ unused_hword_modes ^ unused_psr_write;
 endmodule

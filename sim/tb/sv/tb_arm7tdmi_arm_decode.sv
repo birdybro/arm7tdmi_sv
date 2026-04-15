@@ -192,6 +192,12 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "LDRSH immediate decode mismatch");
     end
 
+    decode(32'hE10F_0000); // MRS r0, CPSR
+    expect_class(ARM_OP_PSR_TRANSFER, 1'b1);
+    if (decoded.rd !== 4'd0 || decoded.psr_write || decoded.psr_use_spsr) begin
+      $fatal(1, "MRS CPSR decode mismatch");
+    end
+
     decode(32'hEF00_0011); // SWI
     expect_class(ARM_OP_SWI, 1'b0);
 
