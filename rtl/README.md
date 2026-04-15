@@ -57,7 +57,7 @@ The repository Makefile provides the current regression surface:
 - ARM multiply and multiply-accumulate, including N/Z flag updates for `MULS`.
 - ARM non-accumulating long multiply `UMULL`/`SMULL`.
 - ARM immediate halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`.
-- ARM PSR transfers: `MRS Rd, CPSR` and register-form `MSR CPSR_f, Rm`.
+- ARM PSR transfers: `MRS Rd, CPSR`, register-form `MSR CPSR_f, Rm`, and immediate-form `MSR CPSR_f, #imm`.
 - ARM swap transfers: `SWP` and `SWPB`.
 - ARM block data transfer foundation: increment/decrement after/before `LDM`/`STM`, with optional writeback when `Rn` is not in the register list, and without PC in the register list.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.

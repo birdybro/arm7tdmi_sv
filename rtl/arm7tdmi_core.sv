@@ -399,7 +399,7 @@ module arm7tdmi_core
           end else if (decoded.op_class == ARM_OP_PSR_TRANSFER) begin
             if (decoded.psr_write) begin
               cpsr_we    <= 1'b1;
-              cpsr_wdata <= {rm_data[31:28], cpsr[27:0]};
+              cpsr_wdata <= {decoded.immediate_operand ? alu_b[31:28] : rm_data[31:28], cpsr[27:0]};
             end else begin
               reg_we    <= 1'b1;
               reg_waddr <= rd;

@@ -258,6 +258,14 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "MSR CPSR_f register decode mismatch");
     end
 
+    decode(32'hE328_F102); // MSR CPSR_f, #0x80000000
+    expect_class(ARM_OP_PSR_TRANSFER, 1'b1);
+    if (!decoded.immediate_operand || !decoded.psr_write || decoded.psr_use_spsr ||
+        decoded.psr_field_mask !== 4'b1000 || decoded.rotate_imm !== 4'h1 ||
+        decoded.imm8 !== 8'h02) begin
+      $fatal(1, "MSR CPSR_f immediate decode mismatch");
+    end
+
     decode(32'hEF00_0011); // SWI
     expect_class(ARM_OP_SWI, 1'b0);
 

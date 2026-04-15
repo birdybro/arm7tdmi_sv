@@ -20,8 +20,9 @@ module arm7tdmi_arm_decode
     is_swap = (instr_i[27:23] == 5'b00010) && (instr_i[21:20] == 2'b00) && (instr_i[11:4] == 8'b00001001);
     is_halfword_transfer = (instr_i[27:25] == 3'b000) && instr_i[7] && instr_i[4] &&
                            (instr_i[6:5] != 2'b00);
-    is_psr_transfer = (instr_i[27:23] == 5'b00010) && (instr_i[21:20] inside {2'b00, 2'b10}) &&
-                      (instr_i[7:4] == 4'b0000);
+    is_psr_transfer = ((instr_i[27:23] == 5'b00010) && (instr_i[21:20] inside {2'b00, 2'b10}) &&
+                       (instr_i[7:4] == 4'b0000)) ||
+                      ((instr_i[27:23] == 5'b00110) && (instr_i[21:20] == 2'b10));
 
     decoded_o = '{
       cond:              arm_cond_t'(instr_i[31:28]),
@@ -86,9 +87,10 @@ module arm7tdmi_arm_decode
         end else if (is_psr_transfer) begin
           decoded_o.op_class = ARM_OP_PSR_TRANSFER;
           if (instr_i[21]) begin
-            decoded_o.supported = !instr_i[22] && !instr_i[25] && (instr_i[19:16] == 4'b1000) &&
-                                  (instr_i[15:12] == 4'hF) && (instr_i[11:4] == 8'h00) &&
-                                  (instr_i[3:0] != 4'd15);
+            decoded_o.supported = !instr_i[22] && (instr_i[19:16] == 4'b1000) &&
+                                  (instr_i[15:12] == 4'hF) &&
+                                  (instr_i[25] || ((instr_i[11:4] == 8'h00) &&
+                                                   (instr_i[3:0] != 4'd15)));
           end else begin
             decoded_o.supported = (instr_i[19:16] == 4'hF) &&
                                   (instr_i[11:0] == 12'h000) && (instr_i[15:12] != 4'd15);
