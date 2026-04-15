@@ -19,6 +19,7 @@ without changing the core boundary.
 | --- | --- |
 | `arm7tdmi_pkg.sv` | Shared mode, condition, ALU, shift, and bus type definitions. |
 | `arm7tdmi_cond.sv` | ARM condition-code evaluator. |
+| `arm7tdmi_arm_decode.sv` | Structured ARM-state instruction classifier and field decoder. |
 | `arm7tdmi_shifter.sv` | ARM barrel-shifter primitive for immediate-shift operands. |
 | `arm7tdmi_alu.sv` | ARM data-processing ALU operations and NZCV generation. |
 | `arm7tdmi_regfile.sv` | Banked ARM register file foundation, CPSR, and SPSR storage. |
@@ -30,6 +31,7 @@ The repository Makefile provides the current regression surface:
 
 - `make lint`
 - `make tb-cond`
+- `make tb-arm-decode`
 - `make tb-shifter`
 - `make tb-alu`
 - `make tb-regfile`

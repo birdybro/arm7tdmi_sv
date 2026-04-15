@@ -80,6 +80,42 @@ package arm7tdmi_pkg;
     BUS_CYCLE_COPROC = 2'b11
   } arm_bus_cycle_t;
 
+  typedef enum logic [3:0] {
+    ARM_OP_UNDEFINED,
+    ARM_OP_DATA_PROCESSING,
+    ARM_OP_BRANCH,
+    ARM_OP_BRANCH_EXCHANGE,
+    ARM_OP_SINGLE_DATA_TRANSFER,
+    ARM_OP_HALFWORD_TRANSFER,
+    ARM_OP_BLOCK_DATA_TRANSFER,
+    ARM_OP_MULTIPLY,
+    ARM_OP_LONG_MULTIPLY,
+    ARM_OP_SWAP,
+    ARM_OP_PSR_TRANSFER,
+    ARM_OP_SWI,
+    ARM_OP_COPROCESSOR
+  } arm_op_class_t;
+
+  typedef struct packed {
+    arm_cond_t     cond;
+    arm_op_class_t op_class;
+    arm_alu_op_t   alu_op;
+    logic [3:0]    rn;
+    logic [3:0]    rd;
+    logic [3:0]    rm;
+    logic [3:0]    rs;
+    logic          set_flags;
+    logic          immediate_operand;
+    logic          register_shift;
+    arm_shift_t    shift_type;
+    logic [4:0]    shift_imm;
+    logic [7:0]    imm8;
+    logic [3:0]    rotate_imm;
+    logic          branch_link;
+    logic [23:0]   branch_imm24;
+    logic          supported;
+  } arm_decoded_t;
+
   function automatic arm_flags_t cpsr_flags(input logic [31:0] cpsr);
     logic unused;
     unused = ^cpsr[27:0];

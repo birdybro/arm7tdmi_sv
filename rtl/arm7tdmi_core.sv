@@ -40,6 +40,7 @@ module arm7tdmi_core
   logic [3:0] rn;
   logic [3:0] rd;
   logic [3:0] rm;
+  arm_decoded_t decoded;
   logic [31:0] rn_data;
   logic [31:0] rm_data;
   logic [31:0] rd_data;
@@ -69,18 +70,12 @@ module arm7tdmi_core
   logic        alu_write_result;
   logic        alu_arithmetic;
 
-  logic        data_processing;
-  logic        immediate_operand;
-  logic        register_shift_operand;
-  logic        set_flags;
-  logic        branch;
-  logic        branch_exchange;
   logic        supported_execute;
   logic [31:0] next_pc;
 
-  assign rn = instr_q[19:16];
-  assign rd = instr_q[15:12];
-  assign rm = instr_q[3:0];
+  assign rn = decoded.rn;
+  assign rd = decoded.rd;
+  assign rm = decoded.rm;
 
   assign flags = cpsr_flags(cpsr);
   assign mode  = arm_mode_t'(cpsr[4:0]);
@@ -107,8 +102,13 @@ module arm7tdmi_core
     .spsr_o(spsr)
   );
 
+  arm7tdmi_arm_decode u_arm_decode (
+    .instr_i(instr_q),
+    .decoded_o(decoded)
+  );
+
   arm7tdmi_cond u_cond (
-    .cond_i(arm_cond_t'(instr_q[31:28])),
+    .cond_i(decoded.cond),
     .flags_i(flags),
     .pass_o(cond_pass)
   );
@@ -135,39 +135,22 @@ module arm7tdmi_core
   );
 
   always_comb begin
-    branch_exchange       = (instr_q[27:4] == 24'h012FFF1);
-    data_processing       = (instr_q[27:26] == 2'b00) &&
-                            !(instr_q[7:4] == 4'b1001) &&
-                            !branch_exchange;
-    immediate_operand     = instr_q[25];
-    register_shift_operand = !instr_q[25] && instr_q[4];
-    branch                = instr_q[27:25] == 3'b101;
-    set_flags             = instr_q[20];
-    alu_op                = arm_alu_op_t'(instr_q[24:21]);
-    shift_type            = arm_shift_t'(instr_q[6:5]);
-    shift_amount          = {3'b000, instr_q[11:7]};
+    alu_op                = decoded.alu_op;
+    shift_type            = decoded.shift_type;
+    shift_amount          = {3'b000, decoded.shift_imm};
     alu_b                 = shifted_rm;
     shifter_carry         = shifted_rm_carry;
-    supported_execute     = 1'b0;
+    supported_execute     = decoded.supported;
     next_pc               = pc_q + 32'd4;
 
-    if (immediate_operand) begin
-      alu_b = (32'({24'h0, instr_q[7:0]}) >> {instr_q[11:8], 1'b0}) |
-              (32'({24'h0, instr_q[7:0]}) << (6'd32 - {1'b0, instr_q[11:8], 1'b0}));
-      shifter_carry = (instr_q[11:8] == 4'h0) ? flags.c : alu_b[31];
+    if (decoded.immediate_operand) begin
+      alu_b = (32'({24'h0, decoded.imm8}) >> {decoded.rotate_imm, 1'b0}) |
+              (32'({24'h0, decoded.imm8}) << (6'd32 - {1'b0, decoded.rotate_imm, 1'b0}));
+      shifter_carry = (decoded.rotate_imm == 4'h0) ? flags.c : alu_b[31];
     end
 
-    if (data_processing && !register_shift_operand) begin
-      supported_execute = 1'b1;
-    end
-
-    if (branch) begin
-      supported_execute = 1'b1;
-      next_pc = pc_q + 32'd8 + {{6{instr_q[23]}}, instr_q[23:0], 2'b00};
-    end
-
-    if (branch_exchange) begin
-      supported_execute = 1'b0;
+    if (decoded.op_class == ARM_OP_BRANCH) begin
+      next_pc = pc_q + 32'd8 + {{6{decoded.branch_imm24[23]}}, decoded.branch_imm24, 2'b00};
     end
   end
 
@@ -226,7 +209,7 @@ module arm7tdmi_core
           if (!cond_pass) begin
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
-          end else if (data_processing && !register_shift_operand) begin
+          end else if (decoded.op_class == ARM_OP_DATA_PROCESSING && !decoded.register_shift) begin
             if (alu_write_result) begin
               if (rd == 4'd15) begin
                 pc_q <= alu_result & 32'hFFFF_FFFC;
@@ -243,12 +226,12 @@ module arm7tdmi_core
               next_fetch_seq_q <= 1'b1;
             end
 
-            if (set_flags) begin
+            if (decoded.set_flags) begin
               cpsr_we    <= 1'b1;
               cpsr_wdata <= cpsr_with_flags(cpsr, alu_flags);
             end
-          end else if (branch) begin
-            if (instr_q[24]) begin
+          end else if (decoded.op_class == ARM_OP_BRANCH) begin
+            if (decoded.branch_link) begin
               reg_we    <= 1'b1;
               reg_waddr <= 4'd14;
               reg_wdata <= pc_q + 32'd4;
@@ -274,5 +257,5 @@ module arm7tdmi_core
   // Interrupt inputs are intentionally part of the public interface from day one.
   // Exception entry is not implemented until the basic ARM/Thumb datapath is stable.
   logic unused_interrupts;
-  assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^rd_data ^ ^spsr;
+  assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^rd_data ^ ^spsr ^ ^decoded.rs;
 endmodule
