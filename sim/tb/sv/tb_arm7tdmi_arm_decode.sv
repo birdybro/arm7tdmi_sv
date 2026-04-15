@@ -92,6 +92,15 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "STR immediate word decode mismatch");
     end
 
+    decode(32'hE5A0_1004); // STR r1, [r0, #4]!
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (!decoded.ls_writeback || decoded.ls_load) begin
+      $fatal(1, "STR immediate writeback decode mismatch");
+    end
+
+    decode(32'hE5B0_1004); // LDR r1, [r0, #4]!
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b0);
+
     decode(32'hE5D0_1000); // LDRB r1, [r0]
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
     if (!decoded.ls_byte || !decoded.ls_load) begin

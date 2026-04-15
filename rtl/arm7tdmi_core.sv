@@ -41,6 +41,8 @@ module arm7tdmi_core
   logic        mem_write_q;
   logic        mem_load_q;
   logic        mem_byte_q;
+  logic        mem_wb_q;
+  logic [3:0]  mem_rn_q;
   logic [3:0]  mem_rd_q;
   logic [31:0] mem_wdata_q;
 
@@ -202,6 +204,8 @@ module arm7tdmi_core
       mem_write_q      <= 1'b0;
       mem_load_q       <= 1'b0;
       mem_byte_q       <= 1'b0;
+      mem_wb_q         <= 1'b0;
+      mem_rn_q         <= 4'h0;
       mem_rd_q         <= 4'h0;
       mem_wdata_q      <= 32'h0000_0000;
       reg_we           <= 1'b0;
@@ -281,6 +285,8 @@ module arm7tdmi_core
             mem_write_q <= !decoded.ls_load;
             mem_load_q  <= decoded.ls_load;
             mem_byte_q  <= decoded.ls_byte;
+            mem_wb_q    <= decoded.ls_writeback;
+            mem_rn_q    <= rn;
             mem_rd_q    <= rd;
             mem_wdata_q <= decoded.ls_byte ? {24'h0, rs_data[7:0]} : rs_data;
             state_q     <= ST_MEM;
@@ -297,6 +303,10 @@ module arm7tdmi_core
               reg_we    <= 1'b1;
               reg_waddr <= mem_rd_q;
               reg_wdata <= mem_byte_q ? {24'h0, bus_rdata_i[7:0]} : bus_rdata_i;
+            end else if (mem_wb_q) begin
+              reg_we    <= 1'b1;
+              reg_waddr <= mem_rn_q;
+              reg_wdata <= mem_addr_q;
             end
             retired_o <= 1'b1;
             pc_q <= pc_q + 32'd4;

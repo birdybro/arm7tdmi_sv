@@ -24,14 +24,18 @@ module tb_arm7tdmi_core_mem
   logic unsupported;
 
   logic [31:0] data_word;
+  logic [31:0] wb_word;
   int r0_seen;
   int r1_seen;
   int r2_seen;
   int r3_seen;
   int r4_seen;
   int r5_seen;
+  int r6_setup_seen;
+  int r6_wb_seen;
   int word_store_seen;
   int down_store_seen;
+  int wb_store_seen;
   int byte_store_seen;
   int word_load_seen;
   int down_load_seen;
@@ -74,10 +78,13 @@ module tb_arm7tdmi_core_mem
       32'h0000_0018: bus_rdata = 32'hE5D0_4005; // LDRB r4, [r0, #5]
       32'h0000_001C: bus_rdata = 32'hE500_1004; // STR r1, [r0, #-4]
       32'h0000_0020: bus_rdata = 32'hE510_5004; // LDR r5, [r0, #-4]
-      32'h0000_0024: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_0024: bus_rdata = 32'hE3A0_6050; // MOV r6, #0x50
+      32'h0000_0028: bus_rdata = 32'hE5A6_1004; // STR r1, [r6, #4]!
+      32'h0000_002C: bus_rdata = 32'hEAFF_FFFE; // B .
       32'h0000_003C: bus_rdata = data_word;
       32'h0000_0044: bus_rdata = data_word;
       32'h0000_0045: bus_rdata = {24'h0, data_word[15:8]};
+      32'h0000_0054: bus_rdata = wb_word;
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
     endcase
   end
@@ -106,6 +113,17 @@ module tb_arm7tdmi_core_mem
 
         data_word <= bus_wdata;
         down_store_seen <= down_store_seen + 1;
+      end else if (bus_addr == 32'h0000_0054) begin
+        if (bus_size !== BUS_SIZE_WORD || bus_cycle !== BUS_CYCLE_NONSEQ) begin
+          $fatal(1, "writeback store expected word nonseq transfer");
+        end
+
+        if (bus_wdata !== 32'h0000_002A) begin
+          $fatal(1, "writeback store expected wdata 0x2a, got %08x", bus_wdata);
+        end
+
+        wb_word <= bus_wdata;
+        wb_store_seen <= wb_store_seen + 1;
       end else if (bus_addr == 32'h0000_0045) begin
         if (bus_size !== BUS_SIZE_BYTE || bus_cycle !== BUS_CYCLE_NONSEQ) begin
           $fatal(1, "byte store expected byte nonseq transfer");
@@ -127,14 +145,18 @@ module tb_arm7tdmi_core_mem
     rst_n = 1'b0;
     bus_ready = 1'b1;
     data_word = 32'hDEAD_BEEF;
+    wb_word = 32'hCAFE_F00D;
     r0_seen = 0;
     r1_seen = 0;
     r2_seen = 0;
     r3_seen = 0;
     r4_seen = 0;
     r5_seen = 0;
+    r6_setup_seen = 0;
+    r6_wb_seen = 0;
     word_store_seen = 0;
     down_store_seen = 0;
+    wb_store_seen = 0;
     byte_store_seen = 0;
     word_load_seen = 0;
     down_load_seen = 0;
@@ -144,7 +166,7 @@ module tb_arm7tdmi_core_mem
     repeat (2) @(posedge clk);
     rst_n = 1'b1;
 
-    for (int cycle = 0; cycle < 80; cycle++) begin
+    for (int cycle = 0; cycle < 100; cycle++) begin
       @(posedge clk);
       #1;
 
@@ -183,7 +205,15 @@ module tb_arm7tdmi_core_mem
         down_load_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_0024) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd6 && debug_reg_wdata == 32'h0000_0050) begin
+        r6_setup_seen++;
+      end
+
+      if (debug_reg_we && debug_reg_waddr == 4'd6 && debug_reg_wdata == 32'h0000_0054) begin
+        r6_wb_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_002C) begin
         loop_seen++;
       end
     end
@@ -196,9 +226,14 @@ module tb_arm7tdmi_core_mem
       $fatal(1, "expected one byte setup write, saw %0d", r3_seen);
     end
 
-    if (word_store_seen != 1 || down_store_seen != 1 || byte_store_seen != 1) begin
-      $fatal(1, "expected one word, down-offset, and byte store, saw word=%0d down=%0d byte=%0d",
-             word_store_seen, down_store_seen, byte_store_seen);
+    if (r6_setup_seen != 1 || r6_wb_seen != 1) begin
+      $fatal(1, "expected r6 setup and writeback, saw setup=%0d wb=%0d",
+             r6_setup_seen, r6_wb_seen);
+    end
+
+    if (word_store_seen != 1 || down_store_seen != 1 || wb_store_seen != 1 || byte_store_seen != 1) begin
+      $fatal(1, "expected one word, down-offset, writeback, and byte store, saw word=%0d down=%0d wb=%0d byte=%0d",
+             word_store_seen, down_store_seen, wb_store_seen, byte_store_seen);
     end
 
     if (word_load_seen != 1 || r2_seen != 1 || down_load_seen != 1 || r5_seen != 1 ||
