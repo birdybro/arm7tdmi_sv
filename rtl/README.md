@@ -35,6 +35,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-shifter`
 - `make tb-alu`
 - `make tb-regfile`
+- `make tb-core-branch`
 - `make test`
 
 ## Implemented So Far
@@ -44,6 +45,7 @@ The repository Makefile provides the current regression surface:
 - ARM data-processing ALU operation set.
 - Immediate operands and register operands with immediate shifts.
 - ARM branch and branch-with-link.
+- ARM branch-and-exchange to ARM-state targets.
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.
 

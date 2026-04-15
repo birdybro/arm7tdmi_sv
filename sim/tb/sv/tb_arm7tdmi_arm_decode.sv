@@ -73,7 +73,7 @@ module tb_arm7tdmi_arm_decode
     end
 
     decode(32'hE12F_FF10); // BX r0
-    expect_class(ARM_OP_BRANCH_EXCHANGE, 1'b0);
+    expect_class(ARM_OP_BRANCH_EXCHANGE, 1'b1);
     if (decoded.rm !== 4'd0) begin
       $fatal(1, "BX decode mismatch");
     end

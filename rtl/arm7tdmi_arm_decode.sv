@@ -47,6 +47,7 @@ module arm7tdmi_arm_decode
       3'b000, 3'b001: begin
         if (is_bx) begin
           decoded_o.op_class = ARM_OP_BRANCH_EXCHANGE;
+          decoded_o.supported = 1'b1;
         end else if (is_long_multiply) begin
           decoded_o.op_class = ARM_OP_LONG_MULTIPLY;
         end else if (is_multiply) begin

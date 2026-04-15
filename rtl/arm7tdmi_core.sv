@@ -74,6 +74,7 @@ module arm7tdmi_core
 
   logic        supported_execute;
   logic [31:0] next_pc;
+  logic [31:0] bx_cpsr;
 
   assign rn = decoded.rn;
   assign rd = decoded.rd;
@@ -147,6 +148,7 @@ module arm7tdmi_core
     shifter_carry         = shifted_rm_carry;
     supported_execute     = decoded.supported;
     next_pc               = pc_q + 32'd4;
+    bx_cpsr               = cpsr;
 
     if (decoded.immediate_operand) begin
       alu_b = (32'({24'h0, decoded.imm8}) >> {decoded.rotate_imm, 1'b0}) |
@@ -156,6 +158,11 @@ module arm7tdmi_core
 
     if (decoded.op_class == ARM_OP_BRANCH) begin
       next_pc = pc_q + 32'd8 + {{6{decoded.branch_imm24[23]}}, decoded.branch_imm24, 2'b00};
+    end
+
+    if (decoded.op_class == ARM_OP_BRANCH_EXCHANGE) begin
+      next_pc    = rm_data[0] ? {rm_data[31:1], 1'b0} : {rm_data[31:2], 2'b00};
+      bx_cpsr[5] = rm_data[0];
     end
   end
 
@@ -242,6 +249,11 @@ module arm7tdmi_core
               reg_wdata <= pc_q + 32'd4;
             end
             pc_q <= next_pc;
+            next_fetch_seq_q <= 1'b0;
+          end else if (decoded.op_class == ARM_OP_BRANCH_EXCHANGE) begin
+            cpsr_we    <= 1'b1;
+            cpsr_wdata <= bx_cpsr;
+            pc_q       <= next_pc;
             next_fetch_seq_q <= 1'b0;
           end else begin
             unsupported_o <= 1'b1;
