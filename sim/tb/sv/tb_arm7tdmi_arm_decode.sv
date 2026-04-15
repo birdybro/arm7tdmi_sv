@@ -104,6 +104,18 @@ module tb_arm7tdmi_arm_decode
     decode(32'hE5B0_0004); // LDR r0, [r0, #4]!
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b0);
 
+    decode(32'hE480_1004); // STR r1, [r0], #4
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.ls_pre_index || !decoded.ls_up || decoded.ls_writeback || decoded.ls_load) begin
+      $fatal(1, "STR post-index immediate decode mismatch");
+    end
+
+    decode(32'hE410_1004); // LDR r1, [r0], #-4
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.ls_pre_index || decoded.ls_up || decoded.ls_writeback || !decoded.ls_load) begin
+      $fatal(1, "LDR post-index immediate decode mismatch");
+    end
+
     decode(32'hE5D0_1000); // LDRB r1, [r0]
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
     if (!decoded.ls_byte || !decoded.ls_load) begin
