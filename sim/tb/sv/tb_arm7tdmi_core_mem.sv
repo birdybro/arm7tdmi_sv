@@ -29,9 +29,12 @@ module tb_arm7tdmi_core_mem
   int r2_seen;
   int r3_seen;
   int r4_seen;
+  int r5_seen;
   int word_store_seen;
+  int down_store_seen;
   int byte_store_seen;
   int word_load_seen;
+  int down_load_seen;
   int byte_load_seen;
   int loop_seen;
 
@@ -69,7 +72,10 @@ module tb_arm7tdmi_core_mem
       32'h0000_0010: bus_rdata = 32'hE3A0_30FF; // MOV r3, #0xff
       32'h0000_0014: bus_rdata = 32'hE5C0_3005; // STRB r3, [r0, #5]
       32'h0000_0018: bus_rdata = 32'hE5D0_4005; // LDRB r4, [r0, #5]
-      32'h0000_001C: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_001C: bus_rdata = 32'hE500_1004; // STR r1, [r0, #-4]
+      32'h0000_0020: bus_rdata = 32'hE510_5004; // LDR r5, [r0, #-4]
+      32'h0000_0024: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_003C: bus_rdata = data_word;
       32'h0000_0044: bus_rdata = data_word;
       32'h0000_0045: bus_rdata = {24'h0, data_word[15:8]};
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
@@ -89,6 +95,17 @@ module tb_arm7tdmi_core_mem
 
         data_word <= bus_wdata;
         word_store_seen <= word_store_seen + 1;
+      end else if (bus_addr == 32'h0000_003C) begin
+        if (bus_size !== BUS_SIZE_WORD || bus_cycle !== BUS_CYCLE_NONSEQ) begin
+          $fatal(1, "down-offset store expected word nonseq transfer");
+        end
+
+        if (bus_wdata !== 32'h0000_002A) begin
+          $fatal(1, "down-offset store expected wdata 0x2a, got %08x", bus_wdata);
+        end
+
+        data_word <= bus_wdata;
+        down_store_seen <= down_store_seen + 1;
       end else if (bus_addr == 32'h0000_0045) begin
         if (bus_size !== BUS_SIZE_BYTE || bus_cycle !== BUS_CYCLE_NONSEQ) begin
           $fatal(1, "byte store expected byte nonseq transfer");
@@ -115,16 +132,19 @@ module tb_arm7tdmi_core_mem
     r2_seen = 0;
     r3_seen = 0;
     r4_seen = 0;
+    r5_seen = 0;
     word_store_seen = 0;
+    down_store_seen = 0;
     byte_store_seen = 0;
     word_load_seen = 0;
+    down_load_seen = 0;
     byte_load_seen = 0;
     loop_seen = 0;
 
     repeat (2) @(posedge clk);
     rst_n = 1'b1;
 
-    for (int cycle = 0; cycle < 60; cycle++) begin
+    for (int cycle = 0; cycle < 80; cycle++) begin
       @(posedge clk);
       #1;
 
@@ -158,7 +178,12 @@ module tb_arm7tdmi_core_mem
         byte_load_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_001C) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd5 && debug_reg_wdata == 32'h0000_002A) begin
+        r5_seen++;
+        down_load_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_0024) begin
         loop_seen++;
       end
     end
@@ -171,14 +196,15 @@ module tb_arm7tdmi_core_mem
       $fatal(1, "expected one byte setup write, saw %0d", r3_seen);
     end
 
-    if (word_store_seen != 1 || byte_store_seen != 1) begin
-      $fatal(1, "expected one word and byte store, saw word=%0d byte=%0d",
-             word_store_seen, byte_store_seen);
+    if (word_store_seen != 1 || down_store_seen != 1 || byte_store_seen != 1) begin
+      $fatal(1, "expected one word, down-offset, and byte store, saw word=%0d down=%0d byte=%0d",
+             word_store_seen, down_store_seen, byte_store_seen);
     end
 
-    if (word_load_seen != 1 || r2_seen != 1 || byte_load_seen != 1 || r4_seen != 1) begin
-      $fatal(1, "expected one word and byte load, saw word=%0d r2=%0d byte=%0d r4=%0d",
-             word_load_seen, r2_seen, byte_load_seen, r4_seen);
+    if (word_load_seen != 1 || r2_seen != 1 || down_load_seen != 1 || r5_seen != 1 ||
+        byte_load_seen != 1 || r4_seen != 1) begin
+      $fatal(1, "expected word, down-offset, and byte loads, saw word=%0d r2=%0d down=%0d r5=%0d byte=%0d r4=%0d",
+             word_load_seen, r2_seen, down_load_seen, r5_seen, byte_load_seen, r4_seen);
     end
 
     if (loop_seen < 2) begin
