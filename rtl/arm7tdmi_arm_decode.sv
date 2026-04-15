@@ -46,6 +46,7 @@ module arm7tdmi_arm_decode
       ls_writeback:      instr_i[21],
       ls_load:           instr_i[20],
       ls_offset12:       instr_i[11:0],
+      mul_accumulate:    instr_i[21],
       supported:         1'b0
     };
 
@@ -58,6 +59,9 @@ module arm7tdmi_arm_decode
           decoded_o.op_class = ARM_OP_LONG_MULTIPLY;
         end else if (is_multiply) begin
           decoded_o.op_class = ARM_OP_MULTIPLY;
+          decoded_o.rd = instr_i[19:16];
+          decoded_o.rn = instr_i[15:12];
+          decoded_o.supported = 1'b1;
         end else if (is_swap) begin
           decoded_o.op_class = ARM_OP_SWAP;
         end else if (is_halfword_transfer) begin

@@ -83,6 +83,8 @@ module arm7tdmi_core
   arm_flags_t  alu_flags;
   logic        alu_write_result;
   logic        alu_arithmetic;
+  logic [31:0] mul_result;
+  arm_flags_t  mul_flags;
 
   logic        supported_execute;
   logic [31:0] next_pc;
@@ -108,7 +110,7 @@ module arm7tdmi_core
     .pc_exec_i(pc_q),
     .raddr_a_i(rn),
     .raddr_b_i(rm),
-    .raddr_c_i(decoded.register_shift ? decoded.rs : rd),
+    .raddr_c_i((decoded.register_shift || decoded.op_class == ARM_OP_MULTIPLY) ? decoded.rs : rd),
     .rdata_a_o(rn_data),
     .rdata_b_o(rm_data),
     .rdata_c_o(rs_data),
@@ -168,6 +170,10 @@ module arm7tdmi_core
     ls_offset             = decoded.immediate_operand ? shifted_rm : {20'h0, decoded.ls_offset12};
     ls_addr               = decoded.ls_up ? rn_data + ls_offset : rn_data - ls_offset;
     ls_transfer_addr      = decoded.ls_pre_index ? ls_addr : rn_data;
+    mul_result            = (rm_data * rs_data) + (decoded.mul_accumulate ? rn_data : 32'h0000_0000);
+    mul_flags             = flags;
+    mul_flags.n           = mul_result[31];
+    mul_flags.z           = mul_result == 32'h0000_0000;
 
     if (decoded.immediate_operand) begin
       alu_b = (32'({24'h0, decoded.imm8}) >> {decoded.rotate_imm, 1'b0}) |
@@ -286,6 +292,18 @@ module arm7tdmi_core
             cpsr_wdata <= bx_cpsr;
             pc_q       <= next_pc;
             next_fetch_seq_q <= 1'b0;
+          end else if (decoded.op_class == ARM_OP_MULTIPLY) begin
+            reg_we    <= 1'b1;
+            reg_waddr <= rd;
+            reg_wdata <= mul_result;
+
+            if (decoded.set_flags) begin
+              cpsr_we    <= 1'b1;
+              cpsr_wdata <= cpsr_with_flags(cpsr, mul_flags);
+            end
+
+            pc_q <= pc_q + 32'd4;
+            next_fetch_seq_q <= 1'b1;
           end else if (decoded.op_class == ARM_OP_SINGLE_DATA_TRANSFER) begin
             mem_addr_q  <= ls_transfer_addr;
             mem_write_q <= !decoded.ls_load;

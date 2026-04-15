@@ -137,7 +137,18 @@ module tb_arm7tdmi_arm_decode
     end
 
     decode(32'hE000_0091); // MUL r0, r1, r0
-    expect_class(ARM_OP_MULTIPLY, 1'b0);
+    expect_class(ARM_OP_MULTIPLY, 1'b1);
+    if (decoded.rd !== 4'd0 || decoded.rm !== 4'd1 || decoded.rs !== 4'd0 ||
+        decoded.mul_accumulate || decoded.set_flags) begin
+      $fatal(1, "MUL decode mismatch");
+    end
+
+    decode(32'hE023_2190); // MLA r3, r0, r1, r2
+    expect_class(ARM_OP_MULTIPLY, 1'b1);
+    if (decoded.rd !== 4'd3 || decoded.rn !== 4'd2 || decoded.rm !== 4'd0 ||
+        decoded.rs !== 4'd1 || !decoded.mul_accumulate) begin
+      $fatal(1, "MLA decode mismatch");
+    end
 
     decode(32'hEF00_0011); // SWI
     expect_class(ARM_OP_SWI, 1'b0);
