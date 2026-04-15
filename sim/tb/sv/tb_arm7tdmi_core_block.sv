@@ -30,9 +30,12 @@ module tb_arm7tdmi_core_block
   int r1_seen;
   int r2_seen;
   int r3_seen;
+  int r7_seen;
+  int r7_wb_seen;
   int r4_seen;
   int r5_seen;
   int r6_seen;
+  int r0_wb_seen;
   int stm_seen;
   int loop_seen;
 
@@ -67,9 +70,10 @@ module tb_arm7tdmi_core_block
       32'h0000_0004: bus_rdata = 32'hE3A0_1011; // MOV r1, #0x11
       32'h0000_0008: bus_rdata = 32'hE3A0_2022; // MOV r2, #0x22
       32'h0000_000C: bus_rdata = 32'hE3A0_3033; // MOV r3, #0x33
-      32'h0000_0010: bus_rdata = 32'hE880_000E; // STMIA r0, {r1-r3}
-      32'h0000_0014: bus_rdata = 32'hE890_0070; // LDMIA r0, {r4-r6}
-      32'h0000_0018: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_0010: bus_rdata = 32'hE8A0_000E; // STMIA r0!, {r1-r3}
+      32'h0000_0014: bus_rdata = 32'hE3A0_7080; // MOV r7, #0x80
+      32'h0000_0018: bus_rdata = 32'hE8B7_0070; // LDMIA r7!, {r4-r6}
+      32'h0000_001C: bus_rdata = 32'hEAFF_FFFE; // B .
       32'h0000_0080: bus_rdata = mem0;
       32'h0000_0084: bus_rdata = mem1;
       32'h0000_0088: bus_rdata = mem2;
@@ -122,9 +126,12 @@ module tb_arm7tdmi_core_block
     r1_seen = 0;
     r2_seen = 0;
     r3_seen = 0;
+    r7_seen = 0;
+    r7_wb_seen = 0;
     r4_seen = 0;
     r5_seen = 0;
     r6_seen = 0;
+    r0_wb_seen = 0;
     stm_seen = 0;
     loop_seen = 0;
 
@@ -151,6 +158,15 @@ module tb_arm7tdmi_core_block
       if (debug_reg_we && debug_reg_waddr == 4'd3 && debug_reg_wdata == 32'h0000_0033) begin
         r3_seen++;
       end
+      if (debug_reg_we && debug_reg_waddr == 4'd0 && debug_reg_wdata == 32'h0000_008C) begin
+        r0_wb_seen++;
+      end
+      if (debug_reg_we && debug_reg_waddr == 4'd7 && debug_reg_wdata == 32'h0000_0080) begin
+        r7_seen++;
+      end
+      if (debug_reg_we && debug_reg_waddr == 4'd7 && debug_reg_wdata == 32'h0000_008C) begin
+        r7_wb_seen++;
+      end
       if (debug_reg_we && debug_reg_waddr == 4'd4 && debug_reg_wdata == 32'h0000_0011) begin
         r4_seen++;
       end
@@ -160,7 +176,7 @@ module tb_arm7tdmi_core_block
       if (debug_reg_we && debug_reg_waddr == 4'd6 && debug_reg_wdata == 32'h0000_0033) begin
         r6_seen++;
       end
-      if (retired && debug_pc == 32'h0000_0018) begin
+      if (retired && debug_pc == 32'h0000_001C) begin
         loop_seen++;
       end
     end
@@ -172,6 +188,11 @@ module tb_arm7tdmi_core_block
 
     if (stm_seen != 3) begin
       $fatal(1, "expected three STMIA stores, saw %0d", stm_seen);
+    end
+
+    if (r0_wb_seen != 1 || r7_seen != 1 || r7_wb_seen != 1) begin
+      $fatal(1, "expected block writeback, saw r0_wb=%0d r7=%0d r7_wb=%0d",
+             r0_wb_seen, r7_seen, r7_wb_seen);
     end
 
     if (r4_seen != 1 || r5_seen != 1 || r6_seen != 1) begin

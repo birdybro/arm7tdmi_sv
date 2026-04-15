@@ -58,7 +58,7 @@ The repository Makefile provides the current regression surface:
 - ARM immediate halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`.
 - ARM PSR transfers: `MRS Rd, CPSR` and register-form `MSR CPSR_f, Rm`.
 - ARM swap transfers: `SWP` and `SWPB`.
-- ARM block data transfer foundation: increment-after `LDMIA`/`STMIA` without writeback or PC in the register list.
+- ARM block data transfer foundation: increment-after `LDMIA`/`STMIA`, with optional writeback when `Rn` is not in the register list, and without PC in the register list.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.

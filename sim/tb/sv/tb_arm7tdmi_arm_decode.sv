@@ -128,6 +128,12 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "LDMIA decode mismatch");
     end
 
+    decode(32'hE8A0_000E); // STMIA r0!, {r1-r3}
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd0 || !decoded.ls_writeback || decoded.block_reglist !== 16'h000E) begin
+      $fatal(1, "STMIA writeback decode mismatch");
+    end
+
     decode(32'hE790_9001); // LDR r9, [r0, r1]
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
     if (!decoded.immediate_operand || decoded.rm !== 4'd1 || decoded.rd !== 4'd9 ||

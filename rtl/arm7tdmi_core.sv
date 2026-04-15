@@ -35,7 +35,8 @@ module arm7tdmi_core
     ST_MUL64_HI,
     ST_SWAP_WRITE,
     ST_SWAP_WB,
-    ST_BLOCK_MEM
+    ST_BLOCK_MEM,
+    ST_BLOCK_WB
   } state_t;
 
   state_t state_q;
@@ -57,6 +58,9 @@ module arm7tdmi_core
   logic [15:0] block_reglist_q;
   logic [3:0]  block_reg_q;
   logic        block_load_q;
+  logic        block_wb_q;
+  logic [3:0]  block_rn_q;
+  logic [31:0] block_wbdata_q;
   logic [3:0]  mul64_hi_waddr_q;
   logic [31:0] mul64_hi_wdata_q;
 
@@ -119,6 +123,13 @@ module arm7tdmi_core
       if (reglist[idx]) begin
         first_reg_in_list = idx[3:0];
       end
+    end
+  endfunction
+
+  function automatic logic [4:0] reglist_count(input logic [15:0] reglist);
+    reglist_count = 5'd0;
+    for (int idx = 0; idx < 16; idx++) begin
+      reglist_count = reglist_count + {4'b0000, reglist[idx]};
     end
   endfunction
 
@@ -274,6 +285,9 @@ module arm7tdmi_core
       block_reglist_q  <= 16'h0000;
       block_reg_q      <= 4'h0;
       block_load_q     <= 1'b0;
+      block_wb_q       <= 1'b0;
+      block_rn_q       <= 4'h0;
+      block_wbdata_q   <= 32'h0000_0000;
       mul64_hi_waddr_q <= 4'h0;
       mul64_hi_wdata_q <= 32'h0000_0000;
       reg_we           <= 1'b0;
@@ -435,6 +449,9 @@ module arm7tdmi_core
             block_reglist_q <= decoded.block_reglist;
             block_reg_q <= first_reg_in_list(decoded.block_reglist);
             block_load_q <= decoded.ls_load;
+            block_wb_q <= decoded.ls_writeback;
+            block_rn_q <= rn;
+            block_wbdata_q <= rn_data + {25'h0, reglist_count(decoded.block_reglist), 2'b00};
             state_q <= ST_BLOCK_MEM;
           end else begin
             unsupported_o <= 1'b1;
@@ -510,16 +527,31 @@ module arm7tdmi_core
             end
 
             if (block_last_reg) begin
-              retired_o <= 1'b1;
-              pc_q <= pc_q + 32'd4;
-              next_fetch_seq_q <= 1'b0;
-              state_q <= ST_FETCH;
+              if (block_wb_q) begin
+                state_q <= ST_BLOCK_WB;
+              end else begin
+                retired_o <= 1'b1;
+                pc_q <= pc_q + 32'd4;
+                next_fetch_seq_q <= 1'b0;
+                state_q <= ST_FETCH;
+              end
             end else begin
               mem_addr_q <= mem_addr_q + 32'd4;
               block_reglist_q <= block_next_reglist;
               block_reg_q <= block_next_reg;
             end
           end
+        end
+
+        ST_BLOCK_WB: begin
+          reg_we    <= 1'b1;
+          reg_waddr <= block_rn_q;
+          reg_wdata <= block_wbdata_q;
+
+          retired_o <= 1'b1;
+          pc_q <= pc_q + 32'd4;
+          next_fetch_seq_q <= 1'b0;
+          state_q <= ST_FETCH;
         end
 
         ST_MEM_WB: begin
