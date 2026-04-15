@@ -40,6 +40,12 @@ module arm7tdmi_arm_decode
       rotate_imm:        instr_i[11:8],
       branch_link:       instr_i[24],
       branch_imm24:      instr_i[23:0],
+      ls_pre_index:      instr_i[24],
+      ls_up:             instr_i[23],
+      ls_byte:           instr_i[22],
+      ls_writeback:      instr_i[21],
+      ls_load:           instr_i[20],
+      ls_offset12:       instr_i[11:0],
       supported:         1'b0
     };
 
@@ -66,6 +72,8 @@ module arm7tdmi_arm_decode
 
       3'b010, 3'b011: begin
         decoded_o.op_class = ARM_OP_SINGLE_DATA_TRANSFER;
+        decoded_o.supported = !instr_i[25] && instr_i[24] && !instr_i[22] && !instr_i[21] &&
+                              (instr_i[19:16] != 4'd15) && (instr_i[15:12] != 4'd15);
       end
 
       3'b100: begin

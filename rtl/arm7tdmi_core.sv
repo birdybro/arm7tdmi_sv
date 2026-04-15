@@ -29,13 +29,19 @@ module arm7tdmi_core
   typedef enum logic [1:0] {
     ST_RESET,
     ST_FETCH,
-    ST_EXECUTE
+    ST_EXECUTE,
+    ST_MEM
   } state_t;
 
   state_t state_q;
   logic [31:0] pc_q;
   logic [31:0] instr_q;
   logic        next_fetch_seq_q;
+  logic [31:0] mem_addr_q;
+  logic        mem_write_q;
+  logic        mem_load_q;
+  logic [3:0]  mem_rd_q;
+  logic [31:0] mem_wdata_q;
 
   logic [3:0] rn;
   logic [3:0] rd;
@@ -66,6 +72,7 @@ module arm7tdmi_core
   logic [7:0]  shift_amount;
   logic [7:0]  rs_shift_amount;
   logic        unused_rs_upper;
+  logic        unused_ls_modes;
   arm_shift_t  shift_type;
   logic [31:0] alu_result;
   arm_flags_t  alu_flags;
@@ -75,6 +82,7 @@ module arm7tdmi_core
   logic        supported_execute;
   logic [31:0] next_pc;
   logic [31:0] bx_cpsr;
+  logic [31:0] ls_addr;
 
   assign rn = decoded.rn;
   assign rd = decoded.rd;
@@ -84,6 +92,7 @@ module arm7tdmi_core
   assign mode  = arm_mode_t'(cpsr[4:0]);
   assign rs_shift_amount = rs_data[7:0];
   assign unused_rs_upper = ^rs_data[31:8];
+  assign unused_ls_modes = decoded.ls_pre_index ^ decoded.ls_byte ^ decoded.ls_writeback;
 
   arm7tdmi_regfile u_regfile (
     .clk_i,
@@ -149,6 +158,8 @@ module arm7tdmi_core
     supported_execute     = decoded.supported;
     next_pc               = pc_q + 32'd4;
     bx_cpsr               = cpsr;
+    ls_addr               = decoded.ls_up ? rn_data + {20'h0, decoded.ls_offset12} :
+                                            rn_data - {20'h0, decoded.ls_offset12};
 
     if (decoded.immediate_operand) begin
       alu_b = (32'({24'h0, decoded.imm8}) >> {decoded.rotate_imm, 1'b0}) |
@@ -166,12 +177,13 @@ module arm7tdmi_core
     end
   end
 
-  assign bus_addr_o  = pc_q;
-  assign bus_valid_o = state_q == ST_FETCH;
-  assign bus_write_o = 1'b0;
+  assign bus_addr_o  = (state_q == ST_MEM) ? mem_addr_q : pc_q;
+  assign bus_valid_o = (state_q == ST_FETCH) || (state_q == ST_MEM);
+  assign bus_write_o = (state_q == ST_MEM) && mem_write_q;
   assign bus_size_o  = BUS_SIZE_WORD;
-  assign bus_cycle_o = next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ;
-  assign bus_wdata_o = 32'h0000_0000;
+  assign bus_cycle_o = (state_q == ST_MEM) ? BUS_CYCLE_NONSEQ :
+                                             (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
+  assign bus_wdata_o = (state_q == ST_MEM) ? mem_wdata_q : 32'h0000_0000;
 
   assign debug_pc_o   = pc_q;
   assign debug_cpsr_o = cpsr;
@@ -185,6 +197,11 @@ module arm7tdmi_core
       pc_q             <= 32'h0000_0000;
       instr_q          <= 32'h0000_0000;
       next_fetch_seq_q <= 1'b0;
+      mem_addr_q       <= 32'h0000_0000;
+      mem_write_q      <= 1'b0;
+      mem_load_q       <= 1'b0;
+      mem_rd_q         <= 4'h0;
+      mem_wdata_q      <= 32'h0000_0000;
       reg_we           <= 1'b0;
       reg_waddr        <= 4'h0;
       reg_wdata        <= 32'h0000_0000;
@@ -216,7 +233,9 @@ module arm7tdmi_core
         end
 
         ST_EXECUTE: begin
-          retired_o <= cond_pass && supported_execute;
+          retired_o <= cond_pass && supported_execute &&
+                       (decoded.op_class != ARM_OP_SINGLE_DATA_TRANSFER);
+          state_q <= ST_FETCH;
 
           if (!cond_pass) begin
             pc_q <= pc_q + 32'd4;
@@ -255,13 +274,32 @@ module arm7tdmi_core
             cpsr_wdata <= bx_cpsr;
             pc_q       <= next_pc;
             next_fetch_seq_q <= 1'b0;
+          end else if (decoded.op_class == ARM_OP_SINGLE_DATA_TRANSFER) begin
+            mem_addr_q  <= ls_addr;
+            mem_write_q <= !decoded.ls_load;
+            mem_load_q  <= decoded.ls_load;
+            mem_rd_q    <= rd;
+            mem_wdata_q <= rs_data;
+            state_q     <= ST_MEM;
           end else begin
             unsupported_o <= 1'b1;
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
           end
+        end
 
-          state_q <= ST_FETCH;
+        ST_MEM: begin
+          if (bus_ready_i) begin
+            if (mem_load_q) begin
+              reg_we    <= 1'b1;
+              reg_waddr <= mem_rd_q;
+              reg_wdata <= bus_rdata_i;
+            end
+            retired_o <= 1'b1;
+            pc_q <= pc_q + 32'd4;
+            next_fetch_seq_q <= 1'b0;
+            state_q <= ST_FETCH;
+          end
         end
 
         default: begin
@@ -274,5 +312,5 @@ module arm7tdmi_core
   // Interrupt inputs are intentionally part of the public interface from day one.
   // Exception entry is not implemented until the basic ARM/Thumb datapath is stable.
   logic unused_interrupts;
-  assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^spsr ^ unused_rs_upper;
+  assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^spsr ^ unused_rs_upper ^ unused_ls_modes;
 endmodule

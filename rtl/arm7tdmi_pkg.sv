@@ -113,6 +113,12 @@ package arm7tdmi_pkg;
     logic [3:0]    rotate_imm;
     logic          branch_link;
     logic [23:0]   branch_imm24;
+    logic          ls_pre_index;
+    logic          ls_up;
+    logic          ls_byte;
+    logic          ls_writeback;
+    logic          ls_load;
+    logic [11:0]   ls_offset12;
     logic          supported;
   } arm_decoded_t;
 
