@@ -328,7 +328,23 @@ module arm7tdmi_core
         end
 
         ST_FETCH: begin
-          if (bus_ready_i) begin
+          if (fiq_i && !cpsr[6]) begin
+            exception_lr_q   <= pc_q + 32'd4;
+            exception_spsr_q <= cpsr;
+            cpsr_we          <= 1'b1;
+            cpsr_wdata       <= {cpsr[31:8], 1'b1, 1'b1, 1'b0, MODE_FIQ};
+            pc_q             <= 32'h0000_001C;
+            next_fetch_seq_q <= 1'b0;
+            state_q          <= ST_EXCEPTION_SAVE;
+          end else if (irq_i && !cpsr[7]) begin
+            exception_lr_q   <= pc_q + 32'd4;
+            exception_spsr_q <= cpsr;
+            cpsr_we          <= 1'b1;
+            cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_IRQ};
+            pc_q             <= 32'h0000_0018;
+            next_fetch_seq_q <= 1'b0;
+            state_q          <= ST_EXCEPTION_SAVE;
+          end else if (bus_ready_i) begin
             instr_q <= bus_rdata_i;
             state_q <= ST_EXECUTE;
           end
