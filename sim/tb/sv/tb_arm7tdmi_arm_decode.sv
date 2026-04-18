@@ -267,7 +267,7 @@ module tb_arm7tdmi_arm_decode
     end
 
     decode(32'hEF00_0011); // SWI
-    expect_class(ARM_OP_SWI, 1'b0);
+    expect_class(ARM_OP_SWI, 1'b1);
 
     $display("tb_arm7tdmi_arm_decode passed");
     $finish;

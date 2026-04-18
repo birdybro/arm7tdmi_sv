@@ -36,7 +36,8 @@ module arm7tdmi_core
     ST_SWAP_WRITE,
     ST_SWAP_WB,
     ST_BLOCK_MEM,
-    ST_BLOCK_WB
+    ST_BLOCK_WB,
+    ST_EXCEPTION_SAVE
   } state_t;
 
   state_t state_q;
@@ -61,6 +62,8 @@ module arm7tdmi_core
   logic        block_wb_q;
   logic [3:0]  block_rn_q;
   logic [31:0] block_wbdata_q;
+  logic [31:0] exception_lr_q;
+  logic [31:0] exception_spsr_q;
   logic [3:0]  mul64_hi_waddr_q;
   logic [31:0] mul64_hi_wdata_q;
 
@@ -294,6 +297,8 @@ module arm7tdmi_core
       block_wb_q       <= 1'b0;
       block_rn_q       <= 4'h0;
       block_wbdata_q   <= 32'h0000_0000;
+      exception_lr_q   <= 32'h0000_0000;
+      exception_spsr_q <= 32'h0000_0000;
       mul64_hi_waddr_q <= 4'h0;
       mul64_hi_wdata_q <= 32'h0000_0000;
       reg_we           <= 1'b0;
@@ -331,7 +336,8 @@ module arm7tdmi_core
                        (decoded.op_class != ARM_OP_SINGLE_DATA_TRANSFER) &&
                        (decoded.op_class != ARM_OP_HALFWORD_TRANSFER) &&
                        (decoded.op_class != ARM_OP_BLOCK_DATA_TRANSFER) &&
-                       (decoded.op_class != ARM_OP_SWAP);
+                       (decoded.op_class != ARM_OP_SWAP) &&
+                       (decoded.op_class != ARM_OP_SWI);
           state_q <= ST_FETCH;
 
           if (!cond_pass) begin
@@ -462,6 +468,14 @@ module arm7tdmi_core
             block_wbdata_q <= decoded.ls_up ? (rn_data + block_byte_count) :
                                                 (rn_data - block_byte_count);
             state_q <= ST_BLOCK_MEM;
+          end else if (decoded.op_class == ARM_OP_SWI) begin
+            exception_lr_q   <= pc_q + 32'd4;
+            exception_spsr_q <= cpsr;
+            cpsr_we          <= 1'b1;
+            cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_SVC};
+            pc_q             <= 32'h0000_0008;
+            next_fetch_seq_q <= 1'b0;
+            state_q          <= ST_EXCEPTION_SAVE;
           end else begin
             unsupported_o <= 1'b1;
             pc_q <= pc_q + 32'd4;
@@ -563,6 +577,18 @@ module arm7tdmi_core
           state_q <= ST_FETCH;
         end
 
+        ST_EXCEPTION_SAVE: begin
+          reg_we    <= 1'b1;
+          reg_waddr <= 4'd14;
+          reg_wdata <= exception_lr_q;
+          spsr_we   <= 1'b1;
+          spsr_wdata <= exception_spsr_q;
+
+          retired_o <= 1'b1;
+          next_fetch_seq_q <= 1'b0;
+          state_q <= ST_FETCH;
+        end
+
         ST_MEM_WB: begin
           reg_we    <= 1'b1;
           reg_waddr <= mem_rn_q;
@@ -593,7 +619,7 @@ module arm7tdmi_core
   end
 
   // Interrupt inputs are intentionally part of the public interface from day one.
-  // Exception entry is not implemented until the basic ARM/Thumb datapath is stable.
+  // IRQ/FIQ sampling is added after the shared exception-entry path is broader.
   logic unused_interrupts;
   assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^spsr ^ unused_rs_upper ^
                              unused_ls_modes ^ unused_hword_modes ^ unused_psr_modes;

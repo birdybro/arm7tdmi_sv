@@ -126,6 +126,7 @@ module arm7tdmi_arm_decode
 
       3'b111: begin
         decoded_o.op_class = instr_i[24] ? ARM_OP_SWI : ARM_OP_COPROCESSOR;
+        decoded_o.supported = instr_i[24];
       end
 
       default: begin

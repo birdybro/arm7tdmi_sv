@@ -10,12 +10,12 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 	rtl/arm7tdmi_regfile.sv \
 	rtl/arm7tdmi_core.sv
 
-.PHONY: lint test tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block clean
+.PHONY: lint test tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block tb-core-exception clean
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
 
-test: lint tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block
+test: lint tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block tb-core-exception
 
 tb-cond:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_cond $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_cond.sv
@@ -72,6 +72,10 @@ tb-core-swap:
 tb-core-block:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_block $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_block.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_block
+
+tb-core-exception:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_exception $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_exception.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_exception
 
 clean:
 	rm -rf $(BUILD_DIR)
