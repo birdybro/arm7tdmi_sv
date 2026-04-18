@@ -59,7 +59,7 @@ The repository Makefile provides the current regression surface:
 - ARM multiply and multiply-accumulate, including N/Z flag updates for `MULS`.
 - ARM non-accumulating long multiply `UMULL`/`SMULL`.
 - ARM immediate halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`.
-- ARM PSR transfers: `MRS Rd, CPSR`, register-form `MSR CPSR_f, Rm`, and immediate-form `MSR CPSR_f, #imm`.
+- ARM PSR transfers: `MRS Rd, CPSR/SPSR` and register/immediate-form `MSR CPSR/SPSR_fields` byte-mask writes.
 - ARM swap transfers: `SWP` and `SWPB`.
 - ARM block data transfer foundation: increment/decrement after/before `LDM`/`STM`, with optional writeback when `Rn` is not in the register list, and without PC in the register list.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.
@@ -71,7 +71,7 @@ The repository Makefile provides the current regression surface:
 ## Explicit Gaps
 
 - Thumb decode and execution.
-- Full block transfer modes, fuller PSR transfer forms, and remaining load/store edge cases.
+- Full block transfer modes and remaining load/store edge cases.
 - Remaining exceptions, aborts, IRQ/FIQ entry, and return-from-exception paths.
 - JTAG/EmbeddedICE/debug behavior.
 - Cycle-accurate instruction timing.

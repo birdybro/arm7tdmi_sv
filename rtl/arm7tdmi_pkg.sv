@@ -147,4 +147,28 @@ package arm7tdmi_pkg;
     unused = ^cpsr[31:28];
     cpsr_with_flags = {flags.n ^ (unused & 1'b0), flags.z, flags.c, flags.v, cpsr[27:0]};
   endfunction
+
+  function automatic logic [31:0] psr_with_field_mask(
+      input logic [31:0] psr,
+      input logic [31:0] value,
+      input logic [3:0] field_mask
+  );
+    psr_with_field_mask = psr;
+
+    if (field_mask[0]) begin
+      psr_with_field_mask[7:0] = value[7:0];
+    end
+
+    if (field_mask[1]) begin
+      psr_with_field_mask[15:8] = value[15:8];
+    end
+
+    if (field_mask[2]) begin
+      psr_with_field_mask[23:16] = value[23:16];
+    end
+
+    if (field_mask[3]) begin
+      psr_with_field_mask[31:24] = value[31:24];
+    end
+  endfunction
 endpackage

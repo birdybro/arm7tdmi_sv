@@ -26,6 +26,7 @@ module tb_arm7tdmi_core_psr
   int cpsr_seen;
   int flags_seen;
   int imm_flags_seen;
+  int control_seen;
   int loop_seen;
 
   arm7tdmi_core dut (
@@ -61,7 +62,9 @@ module tb_arm7tdmi_core_psr
       32'h0000_000C: bus_rdata = 32'hE10F_2000; // MRS r2, CPSR
       32'h0000_0010: bus_rdata = 32'hE328_F102; // MSR CPSR_f, #0x80000000
       32'h0000_0014: bus_rdata = 32'hE10F_3000; // MRS r3, CPSR
-      32'h0000_0018: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_0018: bus_rdata = 32'hE321_F013; // MSR CPSR_c, #0x13
+      32'h0000_001C: bus_rdata = 32'hE10F_4000; // MRS r4, CPSR
+      32'h0000_0020: bus_rdata = 32'hEAFF_FFFE; // B .
       default:       bus_rdata = 32'hE1A0_0000; // MOV r0, r0
     endcase
   end
@@ -72,12 +75,13 @@ module tb_arm7tdmi_core_psr
     cpsr_seen = 0;
     flags_seen = 0;
     imm_flags_seen = 0;
+    control_seen = 0;
     loop_seen = 0;
 
     repeat (2) @(posedge clk);
     rst_n = 1'b1;
 
-    for (int cycle = 0; cycle < 30; cycle++) begin
+    for (int cycle = 0; cycle < 40; cycle++) begin
       @(posedge clk);
       #1;
 
@@ -97,7 +101,7 @@ module tb_arm7tdmi_core_psr
         cpsr_seen++;
       end
 
-      if (debug_reg_we && debug_reg_waddr == 4'd2 && debug_reg_wdata == 32'hF000_00D3) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd2 && debug_reg_wdata == 32'hFF00_00D3) begin
         flags_seen++;
       end
 
@@ -105,7 +109,11 @@ module tb_arm7tdmi_core_psr
         imm_flags_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_0018) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd4 && debug_reg_wdata == 32'h8000_0013) begin
+        control_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_0020) begin
         loop_seen++;
       end
     end
@@ -115,15 +123,19 @@ module tb_arm7tdmi_core_psr
     end
 
     if (flags_seen != 1) begin
-      $fatal(1, "expected one MRS read after MSR flag write, saw %0d", flags_seen);
+      $fatal(1, "expected one MRS read after MSR flag-byte write, saw %0d", flags_seen);
     end
 
     if (imm_flags_seen != 1) begin
       $fatal(1, "expected one MRS read after immediate MSR flag write, saw %0d", imm_flags_seen);
     end
 
-    if (debug_cpsr !== 32'h8000_00D3) begin
-      $fatal(1, "MSR CPSR_f immediate should update only flags, got %08x", debug_cpsr);
+    if (control_seen != 1) begin
+      $fatal(1, "expected one MRS read after immediate MSR control write, saw %0d", control_seen);
+    end
+
+    if (debug_cpsr !== 32'h8000_0013) begin
+      $fatal(1, "MSR CPSR_c immediate should update only control bits, got %08x", debug_cpsr);
     end
 
     if (loop_seen < 2) begin

@@ -87,8 +87,7 @@ module arm7tdmi_arm_decode
         end else if (is_psr_transfer) begin
           decoded_o.op_class = ARM_OP_PSR_TRANSFER;
           if (instr_i[21]) begin
-            decoded_o.supported = !instr_i[22] && (instr_i[19:16] == 4'b1000) &&
-                                  (instr_i[15:12] == 4'hF) &&
+            decoded_o.supported = (instr_i[19:16] != 4'b0000) && (instr_i[15:12] == 4'hF) &&
                                   (instr_i[25] || ((instr_i[11:4] == 8'h00) &&
                                                    (instr_i[3:0] != 4'd15)));
           end else begin

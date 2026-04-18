@@ -112,6 +112,7 @@ module arm7tdmi_core
   logic        supported_execute;
   logic [31:0] next_pc;
   logic [31:0] bx_cpsr;
+  logic [31:0] psr_write_value;
   logic [31:0] ls_offset;
   logic [31:0] ls_addr;
   logic [31:0] ls_transfer_addr;
@@ -241,6 +242,8 @@ module arm7tdmi_core
               (32'({24'h0, decoded.imm8}) << (6'd32 - {1'b0, decoded.rotate_imm, 1'b0}));
       shifter_carry = (decoded.rotate_imm == 4'h0) ? flags.c : alu_b[31];
     end
+
+    psr_write_value = decoded.immediate_operand ? alu_b : rm_data;
 
     if (decoded.op_class == ARM_OP_BRANCH) begin
       next_pc = pc_q + 32'd8 + {{6{decoded.branch_imm24[23]}}, decoded.branch_imm24, 2'b00};
@@ -404,8 +407,13 @@ module arm7tdmi_core
             state_q <= ST_MUL64_HI;
           end else if (decoded.op_class == ARM_OP_PSR_TRANSFER) begin
             if (decoded.psr_write) begin
-              cpsr_we    <= 1'b1;
-              cpsr_wdata <= {decoded.immediate_operand ? alu_b[31:28] : rm_data[31:28], cpsr[27:0]};
+              if (decoded.psr_use_spsr) begin
+                spsr_we    <= 1'b1;
+                spsr_wdata <= psr_with_field_mask(spsr, psr_write_value, decoded.psr_field_mask);
+              end else begin
+                cpsr_we    <= 1'b1;
+                cpsr_wdata <= psr_with_field_mask(cpsr, psr_write_value, decoded.psr_field_mask);
+              end
             end else begin
               reg_we    <= 1'b1;
               reg_waddr <= rd;
