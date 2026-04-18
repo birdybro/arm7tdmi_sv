@@ -367,6 +367,10 @@ module arm7tdmi_core
               if (rd == 4'd15) begin
                 pc_q <= alu_result & 32'hFFFF_FFFC;
                 next_fetch_seq_q <= 1'b0;
+                if (decoded.set_flags) begin
+                  cpsr_we    <= 1'b1;
+                  cpsr_wdata <= spsr;
+                end
               end else begin
                 reg_we    <= 1'b1;
                 reg_waddr <= rd;
@@ -379,7 +383,7 @@ module arm7tdmi_core
               next_fetch_seq_q <= 1'b1;
             end
 
-            if (decoded.set_flags) begin
+            if (decoded.set_flags && !(alu_write_result && rd == 4'd15)) begin
               cpsr_we    <= 1'b1;
               cpsr_wdata <= cpsr_with_flags(cpsr, alu_flags);
             end
