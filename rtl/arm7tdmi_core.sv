@@ -476,6 +476,15 @@ module arm7tdmi_core
             pc_q             <= 32'h0000_0008;
             next_fetch_seq_q <= 1'b0;
             state_q          <= ST_EXCEPTION_SAVE;
+          end else if ((decoded.op_class == ARM_OP_UNDEFINED) ||
+                       (decoded.op_class == ARM_OP_COPROCESSOR)) begin
+            exception_lr_q   <= pc_q + 32'd4;
+            exception_spsr_q <= cpsr;
+            cpsr_we          <= 1'b1;
+            cpsr_wdata       <= {cpsr[31:8], cpsr[7:6], 1'b0, MODE_UND};
+            pc_q             <= 32'h0000_0004;
+            next_fetch_seq_q <= 1'b0;
+            state_q          <= ST_EXCEPTION_SAVE;
           end else begin
             unsupported_o <= 1'b1;
             pc_q <= pc_q + 32'd4;
