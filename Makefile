@@ -10,12 +10,12 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 	rtl/arm7tdmi_regfile.sv \
 	rtl/arm7tdmi_core.sv
 
-.PHONY: lint test tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block tb-core-block-pc tb-core-block-pc-restore tb-core-exception tb-core-undefined tb-core-interrupt tb-core-exception-return clean
+.PHONY: lint test tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-mem-pc tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block tb-core-block-pc tb-core-block-pc-restore tb-core-exception tb-core-undefined tb-core-interrupt tb-core-exception-return clean
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
 
-test: lint tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block tb-core-block-pc tb-core-block-pc-restore tb-core-exception tb-core-undefined tb-core-interrupt tb-core-exception-return
+test: lint tb-cond tb-arm-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-regoffset tb-core-mem-pc tb-core-multiply tb-core-halfword tb-core-psr tb-core-swap tb-core-block tb-core-block-pc tb-core-block-pc-restore tb-core-exception tb-core-undefined tb-core-interrupt tb-core-exception-return
 
 tb-cond:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_cond $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_cond.sv
@@ -52,6 +52,10 @@ tb-core-mem:
 tb-core-mem-regoffset:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem_regoffset $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem_regoffset.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_mem_regoffset
+
+tb-core-mem-pc:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem_pc $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem_pc.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_mem_pc
 
 tb-core-multiply:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_multiply $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_multiply.sv

@@ -38,6 +38,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-branch`
 - `make tb-core-mem`
 - `make tb-core-mem-regoffset`
+- `make tb-core-mem-pc`
 - `make tb-core-multiply`
 - `make tb-core-halfword`
 - `make tb-core-psr`
@@ -67,7 +68,7 @@ The repository Makefile provides the current regression surface:
 - ARM swap transfers: `SWP` and `SWPB`.
 - ARM block data transfer foundation: increment/decrement after/before `LDM`/`STM`, with optional writeback when `Rn` is not in the register list.
 - ARM block load to `PC`, including `LDM ... {pc}^` CPSR restore from SPSR.
-- ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, plus load/store writeback.
+- ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, load/store writeback, and word `LDR` to `PC`.
 - ARM SWI exception entry to the SVC vector with LR/SPSR save.
 - ARM undefined-instruction exception entry to the UND vector for undefined and coprocessor instruction classes.
 - ARM IRQ and FIQ exception entry, with mask-bit checks and FIQ priority over IRQ.

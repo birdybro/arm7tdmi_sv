@@ -531,20 +531,27 @@ module arm7tdmi_core
               mem_load_q   <= 1'b0;
               state_q      <= ST_SWAP_WRITE;
             end else if (mem_load_q) begin
-              reg_we    <= 1'b1;
-              reg_waddr <= mem_rd_q;
-              reg_wdata <= mem_byte_q ? (mem_signed_q ? {{24{bus_rdata_i[7]}}, bus_rdata_i[7:0]} :
-                                                         {24'h0, bus_rdata_i[7:0]}) :
-                                      (mem_half_q ? (mem_signed_q ? {{16{bus_rdata_i[15]}}, bus_rdata_i[15:0]} :
-                                                                    {16'h0, bus_rdata_i[15:0]}) :
-                                                    bus_rdata_i);
+              if (mem_rd_q == 4'd15) begin
+                pc_q <= bus_rdata_i & 32'hFFFF_FFFC;
+                next_fetch_seq_q <= 1'b0;
+              end else begin
+                reg_we    <= 1'b1;
+                reg_waddr <= mem_rd_q;
+                reg_wdata <= mem_byte_q ? (mem_signed_q ? {{24{bus_rdata_i[7]}}, bus_rdata_i[7:0]} :
+                                                           {24'h0, bus_rdata_i[7:0]}) :
+                                        (mem_half_q ? (mem_signed_q ? {{16{bus_rdata_i[15]}}, bus_rdata_i[15:0]} :
+                                                                      {16'h0, bus_rdata_i[15:0]}) :
+                                                      bus_rdata_i);
+              end
 
               if (mem_wb_q) begin
                 state_q <= ST_MEM_WB;
               end else begin
                 retired_o <= 1'b1;
-                pc_q <= pc_q + 32'd4;
-                next_fetch_seq_q <= 1'b0;
+                if (mem_rd_q != 4'd15) begin
+                  pc_q <= pc_q + 32'd4;
+                  next_fetch_seq_q <= 1'b0;
+                end
                 state_q <= ST_FETCH;
               end
             end else if (mem_wb_q) begin
