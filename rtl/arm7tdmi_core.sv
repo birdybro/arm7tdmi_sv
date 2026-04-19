@@ -962,6 +962,17 @@ module arm7tdmi_core
                 state_q          <= ST_EXCEPTION_SAVE;
               end
 
+              THUMB_OP_UNDEFINED: begin
+                retired_o        <= 1'b0;
+                exception_lr_q   <= pc_q + 32'd2;
+                exception_spsr_q <= cpsr;
+                cpsr_we          <= 1'b1;
+                cpsr_wdata       <= {cpsr[31:8], cpsr[7:6], 1'b0, MODE_UND};
+                pc_q             <= 32'h0000_0004;
+                next_fetch_seq_q <= 1'b0;
+                state_q          <= ST_EXCEPTION_SAVE;
+              end
+
               default: begin
                 unsupported_o <= 1'b1;
                 pc_q <= pc_q + 32'd2;
