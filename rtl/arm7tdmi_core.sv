@@ -481,6 +481,10 @@ module arm7tdmi_core
         thumb_raddr_a = {1'b0, thumb_decoded.rb};
       end
 
+      THUMB_OP_LONG_BRANCH_LINK: begin
+        thumb_raddr_a = 4'd14;
+      end
+
       default: begin
       end
     endcase
@@ -916,6 +920,23 @@ module arm7tdmi_core
               THUMB_OP_BRANCH: begin
                 pc_q <= thumb_next_pc;
                 next_fetch_seq_q <= 1'b0;
+              end
+
+              THUMB_OP_LONG_BRANCH_LINK: begin
+                reg_we    <= 1'b1;
+                reg_waddr <= 4'd14;
+                if (thumb_decoded.branch_link) begin
+                  reg_wdata <= (pc_q + 32'd2) | 32'h0000_0001;
+                  pc_q      <= (rn_data + {20'h00000, thumb_decoded.branch_imm11, 1'b0}) &
+                               32'hFFFF_FFFE;
+                  next_fetch_seq_q <= 1'b0;
+                end else begin
+                  reg_wdata <= pc_q + 32'd4 +
+                               {{9{thumb_decoded.branch_imm11[10]}},
+                                thumb_decoded.branch_imm11, 12'h000};
+                  pc_q      <= pc_q + 32'd2;
+                  next_fetch_seq_q <= 1'b1;
+                end
               end
 
               THUMB_OP_COND_BRANCH: begin

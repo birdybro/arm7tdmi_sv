@@ -284,6 +284,18 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "B immediate decode mismatch");
     end
 
+    decode(16'hF000); // BL prefix
+    expect_op(THUMB_OP_LONG_BRANCH_LINK);
+    if (decoded.branch_link || decoded.branch_imm11 !== 11'h000) begin
+      $fatal(1, "BL prefix decode mismatch");
+    end
+
+    decode(16'hF806); // BL suffix
+    expect_op(THUMB_OP_LONG_BRANCH_LINK);
+    if (!decoded.branch_link || decoded.branch_imm11 !== 11'h006) begin
+      $fatal(1, "BL suffix decode mismatch");
+    end
+
     decode(16'hDE00);
     if (decoded.supported) begin
       $fatal(1, "unsupported Thumb opcode decoded as supported");

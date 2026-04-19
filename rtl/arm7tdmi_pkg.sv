@@ -122,6 +122,7 @@ package arm7tdmi_pkg;
     THUMB_OP_SWI,
     THUMB_OP_COND_BRANCH,
     THUMB_OP_BRANCH,
+    THUMB_OP_LONG_BRANCH_LINK,
     THUMB_OP_BRANCH_EXCHANGE
   } thumb_op_class_t;
 
@@ -195,6 +196,7 @@ package arm7tdmi_pkg;
     logic [7:0]      imm8;
     logic [7:0]      branch_imm8;
     logic [10:0]     branch_imm11;
+    logic            branch_link;
     logic            ls_load;
     logic            ls_byte;
     logic            ls_half;

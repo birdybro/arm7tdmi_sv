@@ -23,6 +23,7 @@ module arm7tdmi_thumb_decode
       imm8:          instr_i[7:0],
       branch_imm8:   instr_i[7:0],
       branch_imm11:  instr_i[10:0],
+      branch_link:   1'b0,
       ls_load:       1'b0,
       ls_byte:       1'b0,
       ls_half:       1'b0,
@@ -236,6 +237,12 @@ module arm7tdmi_thumb_decode
       16'b11100???????????: begin
         decoded_o.op_class  = THUMB_OP_BRANCH;
         decoded_o.supported = 1'b1;
+      end
+
+      16'b1111????????????: begin
+        decoded_o.op_class    = THUMB_OP_LONG_BRANCH_LINK;
+        decoded_o.branch_link = instr_i[11];
+        decoded_o.supported   = 1'b1;
       end
 
       default: begin
