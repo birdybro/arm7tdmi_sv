@@ -120,7 +120,9 @@ module arm7tdmi_core
   logic [31:0] ls_offset;
   logic [31:0] ls_addr;
   logic [31:0] ls_transfer_addr;
+  logic [31:0] hword_offset;
   logic [31:0] hword_addr;
+  logic [31:0] hword_transfer_addr;
   logic [15:0] block_next_reglist;
   logic [3:0]  block_next_reg;
   logic        block_last_reg;
@@ -245,8 +247,9 @@ module arm7tdmi_core
     ls_offset             = decoded.immediate_operand ? shifted_rm : {20'h0, decoded.ls_offset12};
     ls_addr               = decoded.ls_up ? rn_data + ls_offset : rn_data - ls_offset;
     ls_transfer_addr      = decoded.ls_pre_index ? ls_addr : rn_data;
-    hword_addr            = decoded.ls_up ? rn_data + {24'h0, decoded.hword_offset8} :
-                                            rn_data - {24'h0, decoded.hword_offset8};
+    hword_offset          = decoded.hword_immediate_offset ? {24'h0, decoded.hword_offset8} : rm_data;
+    hword_addr            = decoded.ls_up ? rn_data + hword_offset : rn_data - hword_offset;
+    hword_transfer_addr   = decoded.ls_pre_index ? hword_addr : rn_data;
     mul_result            = (rm_data * rs_data) + (decoded.mul_accumulate ? rn_data : 32'h0000_0000);
     mul64_result          = decoded.mul_long_signed ? 64'(signed'(rm_data) * signed'(rs_data)) :
                                                        64'(rm_data) * 64'(rs_data);
@@ -479,14 +482,14 @@ module arm7tdmi_core
             mem_wbdata_q <= ls_addr;
             state_q     <= ST_MEM;
           end else if (decoded.op_class == ARM_OP_HALFWORD_TRANSFER) begin
-            mem_addr_q  <= hword_addr;
+            mem_addr_q  <= hword_transfer_addr;
             mem_write_q <= !decoded.ls_load;
             mem_load_q  <= decoded.ls_load;
             mem_byte_q  <= decoded.hword_transfer_type == 2'b10;
             mem_half_q  <= decoded.hword_transfer_type != 2'b10;
             mem_signed_q <= decoded.hword_transfer_type != 2'b01;
             mem_swap_q  <= 1'b0;
-            mem_wb_q    <= 1'b0;
+            mem_wb_q    <= decoded.ls_writeback || !decoded.ls_pre_index;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
             mem_wdata_q <= {16'h0, rs_data[15:0]};

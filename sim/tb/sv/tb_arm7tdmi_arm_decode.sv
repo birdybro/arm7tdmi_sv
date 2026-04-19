@@ -271,28 +271,54 @@ module tb_arm7tdmi_arm_decode
     decode(32'hE1C0_10B2); // STRH r1, [r0, #2]
     expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
     if (!decoded.ls_pre_index || !decoded.ls_up || decoded.ls_load ||
-        decoded.hword_transfer_type !== 2'b01 || decoded.hword_offset8 !== 8'h02) begin
+        !decoded.hword_immediate_offset || decoded.hword_transfer_type !== 2'b01 ||
+        decoded.hword_offset8 !== 8'h02) begin
       $fatal(1, "STRH immediate decode mismatch");
     end
 
     decode(32'hE1D0_20B2); // LDRH r2, [r0, #2]
     expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
     if (!decoded.ls_pre_index || !decoded.ls_up || !decoded.ls_load ||
-        decoded.hword_transfer_type !== 2'b01 || decoded.hword_offset8 !== 8'h02) begin
+        !decoded.hword_immediate_offset || decoded.hword_transfer_type !== 2'b01 ||
+        decoded.hword_offset8 !== 8'h02) begin
       $fatal(1, "LDRH immediate decode mismatch");
+    end
+
+    decode(32'hE180_10B5); // STRH r1, [r0, r5]
+    expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
+    if (!decoded.ls_pre_index || !decoded.ls_up || decoded.ls_load ||
+        decoded.hword_immediate_offset || decoded.rm !== 4'd5 ||
+        decoded.hword_transfer_type !== 2'b01) begin
+      $fatal(1, "STRH register-offset decode mismatch");
+    end
+
+    decode(32'hE1B0_20B5); // LDRH r2, [r0, r5]!
+    expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
+    if (!decoded.ls_pre_index || !decoded.ls_writeback || !decoded.ls_load ||
+        decoded.hword_immediate_offset || decoded.rm !== 4'd5 ||
+        decoded.hword_transfer_type !== 2'b01) begin
+      $fatal(1, "LDRH register-offset writeback decode mismatch");
+    end
+
+    decode(32'hE010_30B5); // LDRH r3, [r0], -r5
+    expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
+    if (decoded.ls_pre_index || decoded.ls_up || !decoded.ls_load ||
+        decoded.hword_immediate_offset || decoded.rm !== 4'd5 ||
+        decoded.hword_transfer_type !== 2'b01) begin
+      $fatal(1, "LDRH register-offset post-index decode mismatch");
     end
 
     decode(32'hE1D0_30D4); // LDRSB r3, [r0, #4]
     expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
     if (!decoded.ls_load || decoded.hword_transfer_type !== 2'b10 ||
-        decoded.hword_offset8 !== 8'h04) begin
+        !decoded.hword_immediate_offset || decoded.hword_offset8 !== 8'h04) begin
       $fatal(1, "LDRSB immediate decode mismatch");
     end
 
     decode(32'hE1D0_40F6); // LDRSH r4, [r0, #6]
     expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
     if (!decoded.ls_load || decoded.hword_transfer_type !== 2'b11 ||
-        decoded.hword_offset8 !== 8'h06) begin
+        !decoded.hword_immediate_offset || decoded.hword_offset8 !== 8'h06) begin
       $fatal(1, "LDRSH immediate decode mismatch");
     end
 

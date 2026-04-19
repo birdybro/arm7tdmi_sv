@@ -42,6 +42,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-mem-unaligned`
 - `make tb-core-multiply`
 - `make tb-core-halfword`
+- `make tb-core-halfword-modes`
 - `make tb-core-psr`
 - `make tb-core-swap`
 - `make tb-core-block`
@@ -65,7 +66,7 @@ The repository Makefile provides the current regression surface:
 - ARM branch-and-exchange to ARM-state targets.
 - ARM multiply and multiply-accumulate, including N/Z flag updates for `MULS`.
 - ARM non-accumulating long multiply `UMULL`/`SMULL`.
-- ARM immediate halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`.
+- ARM halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`, including immediate/register offsets and base writeback.
 - ARM PSR transfers: `MRS Rd, CPSR/SPSR` and register/immediate-form `MSR CPSR/SPSR_fields` byte-mask writes.
 - ARM swap transfers: `SWP` and `SWPB`.
 - ARM block data transfer foundation: increment/decrement after/before `LDM`/`STM`, with optional writeback when `Rn` is not in the register list.
