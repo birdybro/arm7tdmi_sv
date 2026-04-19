@@ -32,10 +32,12 @@ The repository Makefile provides the current regression surface:
 - `make lint`
 - `make tb-cond`
 - `make tb-arm-decode`
+- `make tb-thumb-decode`
 - `make tb-shifter`
 - `make tb-alu`
 - `make tb-regfile`
 - `make tb-core-branch`
+- `make tb-core-thumb-interwork`
 - `make tb-core-mem`
 - `make tb-core-mem-regoffset`
 - `make tb-core-mem-pc`
@@ -64,7 +66,9 @@ The repository Makefile provides the current regression surface:
 - Immediate operands and register operands with immediate shifts.
 - Register-specified shifts, including shifter carry propagation into flag-setting ALU operations.
 - ARM branch and branch-with-link.
-- ARM branch-and-exchange to ARM-state targets.
+- ARM branch-and-exchange to ARM-state and Thumb-state targets.
+- Initial Thumb execution: immediate `MOV`, `CMP`, `ADD`, `SUB`, unconditional
+  branch, and `BX`.
 - ARM multiply and multiply-accumulate, including N/Z flag updates for `MULS`.
 - ARM long multiply `UMULL`, `UMLAL`, `SMULL`, and `SMLAL`.
 - ARM halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`, including immediate/register offsets and base writeback.
@@ -84,7 +88,7 @@ The repository Makefile provides the current regression surface:
 
 ## Explicit Gaps
 
-- Thumb decode and execution.
+- Most Thumb decode and execution groups.
 - Remaining block transfer edge cases and load/store edge cases.
 - Remaining abort exceptions.
 - JTAG/EmbeddedICE/debug behavior.

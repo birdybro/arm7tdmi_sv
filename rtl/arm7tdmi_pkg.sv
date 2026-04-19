@@ -96,6 +96,16 @@ package arm7tdmi_pkg;
     ARM_OP_COPROCESSOR
   } arm_op_class_t;
 
+  typedef enum logic [2:0] {
+    THUMB_OP_UNDEFINED,
+    THUMB_OP_MOV_IMM,
+    THUMB_OP_CMP_IMM,
+    THUMB_OP_ADD_IMM,
+    THUMB_OP_SUB_IMM,
+    THUMB_OP_BRANCH,
+    THUMB_OP_BRANCH_EXCHANGE
+  } thumb_op_class_t;
+
   typedef struct packed {
     arm_cond_t     cond;
     arm_op_class_t op_class;
@@ -130,6 +140,15 @@ package arm7tdmi_pkg;
     logic [3:0]    psr_field_mask;
     logic          supported;
   } arm_decoded_t;
+
+  typedef struct packed {
+    thumb_op_class_t op_class;
+    logic [2:0]      rd;
+    logic [3:0]      rm;
+    logic [7:0]      imm8;
+    logic [10:0]     branch_imm11;
+    logic            supported;
+  } thumb_decoded_t;
 
   function automatic arm_flags_t cpsr_flags(input logic [31:0] cpsr);
     logic unused;

@@ -75,6 +75,7 @@ module arm7tdmi_core
   logic [3:0] raddr_c;
   logic [3:0] raddr_d;
   arm_decoded_t decoded;
+  thumb_decoded_t thumb_decoded;
   logic [31:0] rn_data;
   logic [31:0] rm_data;
   logic [31:0] rs_data;
@@ -95,6 +96,7 @@ module arm7tdmi_core
   logic [31:0] spsr_wdata;
 
   logic       cond_pass;
+  logic       execute_cond_pass;
   arm_alu_op_t alu_op;
   logic [31:0] alu_b;
   logic        shifter_carry;
@@ -118,8 +120,16 @@ module arm7tdmi_core
   arm_flags_t  mul_flags;
 
   logic        supported_execute;
+  logic        thumb_state;
   logic [31:0] next_pc;
   logic [31:0] bx_cpsr;
+  logic [31:0] thumb_imm32;
+  logic [31:0] thumb_alu_result;
+  logic [32:0] thumb_add_wide;
+  logic [32:0] thumb_sub_wide;
+  arm_flags_t  thumb_flags;
+  logic [31:0] thumb_next_pc;
+  logic [31:0] thumb_bx_cpsr;
   logic [31:0] psr_write_value;
   logic [31:0] ls_offset;
   logic [31:0] ls_addr;
@@ -164,9 +174,10 @@ module arm7tdmi_core
     endcase
   endfunction
 
-  assign rn = decoded.rn;
-  assign rd = decoded.rd;
-  assign rm = decoded.rm;
+  assign thumb_state = cpsr[5];
+  assign rn = thumb_state ? {1'b0, thumb_decoded.rd} : decoded.rn;
+  assign rd = thumb_state ? {1'b0, thumb_decoded.rd} : decoded.rd;
+  assign rm = thumb_state ? thumb_decoded.rm : decoded.rm;
 
   assign flags = cpsr_flags(cpsr);
   assign mode  = arm_mode_t'(cpsr[4:0]);
@@ -228,6 +239,11 @@ module arm7tdmi_core
     .decoded_o(decoded)
   );
 
+  arm7tdmi_thumb_decode u_thumb_decode (
+    .instr_i(instr_q[15:0]),
+    .decoded_o(thumb_decoded)
+  );
+
   arm7tdmi_cond u_cond (
     .cond_i(decoded.cond),
     .flags_i(flags),
@@ -262,9 +278,17 @@ module arm7tdmi_core
     shift_amount          = decoded.register_shift ? rs_shift_amount : {3'b000, decoded.shift_imm};
     alu_b                 = shifted_rm;
     shifter_carry         = shifted_rm_carry;
-    supported_execute     = decoded.supported;
+    execute_cond_pass     = thumb_state ? 1'b1 : cond_pass;
+    supported_execute     = thumb_state ? thumb_decoded.supported : decoded.supported;
     next_pc               = pc_q + 32'd4;
     bx_cpsr               = cpsr;
+    thumb_imm32           = {24'h0, thumb_decoded.imm8};
+    thumb_add_wide        = {1'b0, rn_data} + {1'b0, thumb_imm32};
+    thumb_sub_wide        = {1'b0, rn_data} - {1'b0, thumb_imm32};
+    thumb_alu_result      = 32'h0000_0000;
+    thumb_flags           = flags;
+    thumb_next_pc         = pc_q + 32'd2;
+    thumb_bx_cpsr         = cpsr;
     ls_offset             = decoded.immediate_operand ? shifted_rm : {20'h0, decoded.ls_offset12};
     ls_addr               = decoded.ls_up ? rn_data + ls_offset : rn_data - ls_offset;
     ls_transfer_addr      = decoded.ls_pre_index ? ls_addr : rn_data;
@@ -289,6 +313,45 @@ module arm7tdmi_core
 
     psr_write_value = decoded.immediate_operand ? alu_b : rm_data;
 
+    unique case (thumb_decoded.op_class)
+      THUMB_OP_MOV_IMM: begin
+        thumb_alu_result = thumb_imm32;
+        thumb_flags.n    = thumb_imm32[31];
+        thumb_flags.z    = thumb_imm32 == 32'h0000_0000;
+      end
+
+      THUMB_OP_CMP_IMM, THUMB_OP_SUB_IMM: begin
+        thumb_alu_result = thumb_sub_wide[31:0];
+        thumb_flags.n    = thumb_sub_wide[31];
+        thumb_flags.z    = thumb_sub_wide[31:0] == 32'h0000_0000;
+        thumb_flags.c    = !thumb_sub_wide[32];
+        thumb_flags.v    = (rn_data[31] != thumb_imm32[31]) &&
+                           (thumb_sub_wide[31] != rn_data[31]);
+      end
+
+      THUMB_OP_ADD_IMM: begin
+        thumb_alu_result = thumb_add_wide[31:0];
+        thumb_flags.n    = thumb_add_wide[31];
+        thumb_flags.z    = thumb_add_wide[31:0] == 32'h0000_0000;
+        thumb_flags.c    = thumb_add_wide[32];
+        thumb_flags.v    = (rn_data[31] == thumb_imm32[31]) &&
+                           (thumb_add_wide[31] != rn_data[31]);
+      end
+
+      THUMB_OP_BRANCH: begin
+        thumb_next_pc = pc_q + 32'd4 + {{20{thumb_decoded.branch_imm11[10]}},
+                                        thumb_decoded.branch_imm11, 1'b0};
+      end
+
+      THUMB_OP_BRANCH_EXCHANGE: begin
+        thumb_next_pc    = rm_data[0] ? {rm_data[31:1], 1'b0} : {rm_data[31:2], 2'b00};
+        thumb_bx_cpsr[5] = rm_data[0];
+      end
+
+      default: begin
+      end
+    endcase
+
     if (decoded.op_class == ARM_OP_BRANCH) begin
       next_pc = pc_q + 32'd8 + {{6{decoded.branch_imm24[23]}}, decoded.branch_imm24, 2'b00};
     end
@@ -307,7 +370,7 @@ module arm7tdmi_core
                        ((state_q == ST_BLOCK_MEM) && !block_load_q);
   assign bus_size_o  = (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_byte_q) ? BUS_SIZE_BYTE :
                        ((((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_half_q) ? BUS_SIZE_HALF :
-                                                                                               BUS_SIZE_WORD);
+                        (((state_q == ST_FETCH) && thumb_state) ? BUS_SIZE_HALF : BUS_SIZE_WORD));
   assign bus_cycle_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
                         (state_q == ST_BLOCK_MEM)) ? BUS_CYCLE_NONSEQ :
                                                     (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
@@ -393,13 +456,13 @@ module arm7tdmi_core
             next_fetch_seq_q <= 1'b0;
             state_q          <= ST_EXCEPTION_SAVE;
           end else if (bus_ready_i) begin
-            instr_q <= bus_rdata_i;
+            instr_q <= thumb_state ? {16'h0000, bus_rdata_i[15:0]} : bus_rdata_i;
             state_q <= ST_EXECUTE;
           end
         end
 
         ST_EXECUTE: begin
-          retired_o <= cond_pass && supported_execute &&
+          retired_o <= execute_cond_pass && supported_execute && !thumb_state &&
                        (decoded.op_class != ARM_OP_SINGLE_DATA_TRANSFER) &&
                        (decoded.op_class != ARM_OP_HALFWORD_TRANSFER) &&
                        (decoded.op_class != ARM_OP_BLOCK_DATA_TRANSFER) &&
@@ -407,7 +470,46 @@ module arm7tdmi_core
                        (decoded.op_class != ARM_OP_SWI);
           state_q <= ST_FETCH;
 
-          if (!cond_pass) begin
+          if (thumb_state) begin
+            retired_o <= thumb_decoded.supported;
+
+            unique case (thumb_decoded.op_class)
+              THUMB_OP_MOV_IMM, THUMB_OP_ADD_IMM, THUMB_OP_SUB_IMM: begin
+                reg_we    <= 1'b1;
+                reg_waddr <= rd;
+                reg_wdata <= thumb_alu_result;
+                cpsr_we   <= 1'b1;
+                cpsr_wdata <= cpsr_with_flags(cpsr, thumb_flags);
+                pc_q      <= pc_q + 32'd2;
+                next_fetch_seq_q <= 1'b1;
+              end
+
+              THUMB_OP_CMP_IMM: begin
+                cpsr_we    <= 1'b1;
+                cpsr_wdata <= cpsr_with_flags(cpsr, thumb_flags);
+                pc_q       <= pc_q + 32'd2;
+                next_fetch_seq_q <= 1'b1;
+              end
+
+              THUMB_OP_BRANCH: begin
+                pc_q <= thumb_next_pc;
+                next_fetch_seq_q <= 1'b0;
+              end
+
+              THUMB_OP_BRANCH_EXCHANGE: begin
+                cpsr_we    <= 1'b1;
+                cpsr_wdata <= thumb_bx_cpsr;
+                pc_q       <= thumb_next_pc;
+                next_fetch_seq_q <= 1'b0;
+              end
+
+              default: begin
+                unsupported_o <= 1'b1;
+                pc_q <= pc_q + 32'd2;
+                next_fetch_seq_q <= 1'b1;
+              end
+            endcase
+          end else if (!cond_pass) begin
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
           end else if (decoded.op_class == ARM_OP_DATA_PROCESSING) begin
