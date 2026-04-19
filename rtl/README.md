@@ -46,6 +46,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-psr`
 - `make tb-core-swap`
 - `make tb-core-block`
+- `make tb-core-block-empty`
 - `make tb-core-block-pc`
 - `make tb-core-block-pc-restore`
 - `make tb-core-block-user`
@@ -70,6 +71,7 @@ The repository Makefile provides the current regression surface:
 - ARM PSR transfers: `MRS Rd, CPSR/SPSR` and register/immediate-form `MSR CPSR/SPSR_fields` byte-mask writes.
 - ARM swap transfers: `SWP` and `SWPB`.
 - ARM block data transfer foundation: increment/decrement after/before `LDM`/`STM`, with optional writeback when `Rn` is not in the register list.
+- ARM empty-list block transfer behavior, modeled as an `r15` transfer over a 64-byte base span.
 - ARM block load to `PC`, including `LDM ... {pc}^` CPSR restore from SPSR.
 - ARM privileged block-transfer user-bank forms: `LDM/STM ...^` without `PC`.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, load/store writeback, word `LDR` to `PC`, and unaligned word-load rotation.

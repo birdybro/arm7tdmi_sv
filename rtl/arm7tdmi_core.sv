@@ -130,9 +130,12 @@ module arm7tdmi_core
   logic [15:0] block_next_reglist;
   logic [3:0]  block_next_reg;
   logic        block_last_reg;
+  logic [15:0] block_effective_reglist;
   logic [4:0]  block_reg_count;
   logic [31:0] block_byte_count;
   logic [31:0] block_down_offset;
+  logic [31:0] block_start_addr;
+  logic [31:0] block_store_data;
 
   function automatic logic [3:0] first_reg_in_list(input logic [15:0] reglist);
     first_reg_in_list = 4'd0;
@@ -175,9 +178,19 @@ module arm7tdmi_core
   assign block_next_reglist = block_reglist_q & ~(16'h0001 << block_reg_q);
   assign block_next_reg = first_reg_in_list(block_next_reglist);
   assign block_last_reg = block_next_reglist == 16'h0000;
-  assign block_reg_count = reglist_count(decoded.block_reglist);
+  assign block_effective_reglist = (decoded.block_reglist == 16'h0000) ? 16'h8000 :
+                                                                         decoded.block_reglist;
+  assign block_reg_count = (decoded.block_reglist == 16'h0000) ? 5'd16 :
+                                                              reglist_count(decoded.block_reglist);
   assign block_byte_count = {25'h0, block_reg_count, 2'b00};
   assign block_down_offset = {25'h0, block_reg_count - 5'd1, 2'b00};
+  assign block_start_addr = (decoded.block_reglist == 16'h0000) ?
+                            (decoded.ls_up ? (rn_data + (decoded.ls_pre_index ? 32'd4 : 32'd0)) :
+                                             (rn_data - (decoded.ls_pre_index ? 32'd64 : 32'd60))) :
+                            (decoded.ls_up ? (rn_data + (decoded.ls_pre_index ? 32'd4 : 32'd0)) :
+                                             (rn_data - (decoded.ls_pre_index ? block_byte_count :
+                                                                           block_down_offset)));
+  assign block_store_data = (block_reg_q == 4'd15) ? (pc_q + 32'd12) : rs_data;
   assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
                    ((decoded.register_shift || (decoded.op_class == ARM_OP_MULTIPLY) ||
                      (decoded.op_class == ARM_OP_LONG_MULTIPLY)) ? decoded.rs : rd);
@@ -298,7 +311,7 @@ module arm7tdmi_core
   assign bus_cycle_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
                         (state_q == ST_BLOCK_MEM)) ? BUS_CYCLE_NONSEQ :
                                                     (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
-  assign bus_wdata_o = (state_q == ST_BLOCK_MEM) ? rs_data :
+  assign bus_wdata_o = (state_q == ST_BLOCK_MEM) ? block_store_data :
                        (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_wdata_q : 32'h0000_0000);
 
   assign debug_pc_o   = pc_q;
@@ -520,11 +533,9 @@ module arm7tdmi_core
             mem_wbdata_q <= 32'h0000_0000;
             state_q     <= ST_MEM;
           end else if (decoded.op_class == ARM_OP_BLOCK_DATA_TRANSFER) begin
-            mem_addr_q <= decoded.ls_up ? (rn_data + (decoded.ls_pre_index ? 32'd4 : 32'd0)) :
-                                          (rn_data - (decoded.ls_pre_index ? block_byte_count :
-                                                                            block_down_offset));
-            block_reglist_q <= decoded.block_reglist;
-            block_reg_q <= first_reg_in_list(decoded.block_reglist);
+            mem_addr_q <= block_start_addr;
+            block_reglist_q <= block_effective_reglist;
+            block_reg_q <= first_reg_in_list(block_effective_reglist);
             block_load_q <= decoded.ls_load;
             block_wb_q <= decoded.ls_writeback;
             block_restore_cpsr_q <= decoded.psr_use_spsr && decoded.ls_load && decoded.block_reglist[15];

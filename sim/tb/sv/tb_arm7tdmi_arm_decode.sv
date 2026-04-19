@@ -148,6 +148,18 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "LDMIA decode mismatch");
     end
 
+    decode(32'hE880_0000); // STMIA r0, {}
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd0 || decoded.ls_load || decoded.block_reglist !== 16'h0000) begin
+      $fatal(1, "STMIA empty-list decode mismatch");
+    end
+
+    decode(32'hE890_0000); // LDMIA r0, {}
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd0 || !decoded.ls_load || decoded.block_reglist !== 16'h0000) begin
+      $fatal(1, "LDMIA empty-list decode mismatch");
+    end
+
     decode(32'hE890_8000); // LDMIA r0, {pc}
     expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
     if (decoded.rn !== 4'd0 || !decoded.ls_load || decoded.ls_writeback ||
