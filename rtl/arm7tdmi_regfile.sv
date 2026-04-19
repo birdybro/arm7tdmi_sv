@@ -12,6 +12,7 @@ module arm7tdmi_regfile
   input  logic [3:0] raddr_a_i,
   input  logic [3:0] raddr_b_i,
   input  logic [3:0] raddr_c_i,
+  input  logic       raddr_c_user_i,
   output logic [31:0] rdata_a_o,
   output logic [31:0] rdata_b_o,
   output logic [31:0] rdata_c_o,
@@ -19,6 +20,7 @@ module arm7tdmi_regfile
   input  logic       we_i,
   input  logic [3:0] waddr_i,
   input  logic [31:0] wdata_i,
+  input  logic       wuser_i,
 
   input  logic       cpsr_we_i,
   input  logic [31:0] cpsr_wdata_i,
@@ -82,7 +84,7 @@ module arm7tdmi_regfile
 
   assign rdata_a_o = read_reg(mode_i, raddr_a_i);
   assign rdata_b_o = read_reg(mode_i, raddr_b_i);
-  assign rdata_c_o = read_reg(mode_i, raddr_c_i);
+  assign rdata_c_o = read_reg(raddr_c_user_i ? MODE_USR : mode_i, raddr_c_i);
   assign cpsr_o    = cpsr_q;
   assign spsr_o    = read_spsr(mode_i);
 
@@ -109,10 +111,10 @@ module arm7tdmi_regfile
       spsr_und_q <= 32'h0000_0000;
     end else begin
       if (we_i && waddr_i != 4'd15) begin
-        if (fiq_bank(mode_i, waddr_i)) begin
+        if (fiq_bank(wuser_i ? MODE_USR : mode_i, waddr_i)) begin
           r_fiq[waddr_i] <= wdata_i;
-        end else if (mode_r13_r14_bank(mode_i, waddr_i)) begin
-          unique case (mode_i)
+        end else if (mode_r13_r14_bank(wuser_i ? MODE_USR : mode_i, waddr_i)) begin
+          unique case (wuser_i ? MODE_USR : mode_i)
             MODE_IRQ: r_irq[waddr_i] <= wdata_i;
             MODE_SVC: r_svc[waddr_i] <= wdata_i;
             MODE_ABT: r_abt[waddr_i] <= wdata_i;

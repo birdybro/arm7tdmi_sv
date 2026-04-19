@@ -61,6 +61,7 @@ module arm7tdmi_core
   logic        block_load_q;
   logic        block_wb_q;
   logic        block_restore_cpsr_q;
+  logic        block_user_bank_q;
   logic [3:0]  block_rn_q;
   logic [31:0] block_wbdata_q;
   logic [31:0] exception_lr_q;
@@ -84,6 +85,8 @@ module arm7tdmi_core
   logic       reg_we;
   logic [3:0] reg_waddr;
   logic [31:0] reg_wdata;
+  logic       reg_write_user;
+  logic       reg_raddr_c_user;
   logic       cpsr_we;
   logic [31:0] cpsr_wdata;
   logic       spsr_we;
@@ -160,6 +163,7 @@ module arm7tdmi_core
   assign block_down_offset = {25'h0, block_reg_count - 5'd1, 2'b00};
   assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
                    ((decoded.register_shift || decoded.op_class == ARM_OP_MULTIPLY) ? decoded.rs : rd);
+  assign reg_raddr_c_user = (state_q == ST_BLOCK_MEM) && block_user_bank_q;
 
   arm7tdmi_regfile u_regfile (
     .clk_i,
@@ -169,12 +173,14 @@ module arm7tdmi_core
     .raddr_a_i(rn),
     .raddr_b_i(rm),
     .raddr_c_i(raddr_c),
+    .raddr_c_user_i(reg_raddr_c_user),
     .rdata_a_o(rn_data),
     .rdata_b_o(rm_data),
     .rdata_c_o(rs_data),
     .we_i(reg_we),
     .waddr_i(reg_waddr),
     .wdata_i(reg_wdata),
+    .wuser_i(reg_write_user),
     .cpsr_we_i(cpsr_we),
     .cpsr_wdata_i(cpsr_wdata),
     .cpsr_o(cpsr),
@@ -300,6 +306,7 @@ module arm7tdmi_core
       block_load_q     <= 1'b0;
       block_wb_q       <= 1'b0;
       block_restore_cpsr_q <= 1'b0;
+      block_user_bank_q <= 1'b0;
       block_rn_q       <= 4'h0;
       block_wbdata_q   <= 32'h0000_0000;
       exception_lr_q   <= 32'h0000_0000;
@@ -309,6 +316,7 @@ module arm7tdmi_core
       reg_we           <= 1'b0;
       reg_waddr        <= 4'h0;
       reg_wdata        <= 32'h0000_0000;
+      reg_write_user   <= 1'b0;
       cpsr_we          <= 1'b0;
       cpsr_wdata       <= 32'h0000_00D3;
       spsr_we          <= 1'b0;
@@ -317,6 +325,7 @@ module arm7tdmi_core
       unsupported_o    <= 1'b0;
     end else begin
       reg_we        <= 1'b0;
+      reg_write_user <= 1'b0;
       cpsr_we       <= 1'b0;
       spsr_we       <= 1'b0;
       retired_o     <= 1'b0;
@@ -495,6 +504,7 @@ module arm7tdmi_core
             block_load_q <= decoded.ls_load;
             block_wb_q <= decoded.ls_writeback;
             block_restore_cpsr_q <= decoded.psr_use_spsr && decoded.ls_load && decoded.block_reglist[15];
+            block_user_bank_q <= decoded.psr_use_spsr && !decoded.block_reglist[15];
             block_rn_q <= rn;
             block_wbdata_q <= decoded.ls_up ? (rn_data + block_byte_count) :
                                                 (rn_data - block_byte_count);
@@ -602,6 +612,7 @@ module arm7tdmi_core
                 reg_we    <= 1'b1;
                 reg_waddr <= block_reg_q;
                 reg_wdata <= bus_rdata_i;
+                reg_write_user <= block_user_bank_q;
               end
             end
 

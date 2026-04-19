@@ -165,6 +165,20 @@ module tb_arm7tdmi_arm_decode
     decode(32'hE8B0_8000); // LDMIA r0!, {pc}
     expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b0);
 
+    decode(32'hE8C0_6000); // STMIA r0, {r13-r14}^
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd0 || decoded.ls_load || !decoded.psr_use_spsr ||
+        decoded.block_reglist !== 16'h6000) begin
+      $fatal(1, "STMIA user-bank decode mismatch");
+    end
+
+    decode(32'hE8D0_6000); // LDMIA r0, {r13-r14}^
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd0 || !decoded.ls_load || !decoded.psr_use_spsr ||
+        decoded.block_reglist !== 16'h6000) begin
+      $fatal(1, "LDMIA user-bank decode mismatch");
+    end
+
     decode(32'hE8A0_000E); // STMIA r0!, {r1-r3}
     expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
     if (decoded.rn !== 4'd0 || !decoded.ls_writeback || decoded.block_reglist !== 16'h000E) begin

@@ -46,6 +46,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-block`
 - `make tb-core-block-pc`
 - `make tb-core-block-pc-restore`
+- `make tb-core-block-user`
 - `make tb-core-exception`
 - `make tb-core-undefined`
 - `make tb-core-interrupt`
@@ -68,6 +69,7 @@ The repository Makefile provides the current regression surface:
 - ARM swap transfers: `SWP` and `SWPB`.
 - ARM block data transfer foundation: increment/decrement after/before `LDM`/`STM`, with optional writeback when `Rn` is not in the register list.
 - ARM block load to `PC`, including `LDM ... {pc}^` CPSR restore from SPSR.
+- ARM privileged block-transfer user-bank forms: `LDM/STM ...^` without `PC`.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, load/store writeback, and word `LDR` to `PC`.
 - ARM SWI exception entry to the SVC vector with LR/SPSR save.
 - ARM undefined-instruction exception entry to the UND vector for undefined and coprocessor instruction classes.
@@ -79,8 +81,8 @@ The repository Makefile provides the current regression surface:
 ## Explicit Gaps
 
 - Thumb decode and execution.
-- Full block transfer modes and remaining load/store edge cases.
-- Remaining abort exceptions and privileged user-bank block-transfer forms.
+- Remaining block transfer edge cases and load/store edge cases.
+- Remaining abort exceptions.
 - JTAG/EmbeddedICE/debug behavior.
 - Cycle-accurate instruction timing.
 - GBA-specific wait-state and prefetch behavior.
