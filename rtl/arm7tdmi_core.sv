@@ -138,6 +138,7 @@ module arm7tdmi_core
   logic [31:0] thumb_ls_addr;
   logic [31:0] thumb_ls_reg_addr;
   logic [31:0] thumb_ls_sp_addr;
+  logic [31:0] thumb_add_addr_result;
   logic [32:0] thumb_add_wide;
   logic [32:0] thumb_sub_wide;
   logic [32:0] thumb_adc_wide;
@@ -331,6 +332,8 @@ module arm7tdmi_core
     thumb_ls_addr         = rn_data + thumb_ls_imm_offset;
     thumb_ls_reg_addr     = rn_data + rm_data;
     thumb_ls_sp_addr      = rn_data + {22'h0, thumb_decoded.imm8, 2'b00};
+    thumb_add_addr_result = (thumb_decoded.sp_base ? rn_data : ((pc_q + 32'd4) & 32'hFFFF_FFFC)) +
+                            {22'h0, thumb_decoded.imm8, 2'b00};
     thumb_alu_reg_write   = 1'b0;
     thumb_flags           = flags;
     thumb_next_pc         = pc_q + 32'd2;
@@ -437,6 +440,10 @@ module arm7tdmi_core
         thumb_raddr_a = 4'd13;
       end
 
+      THUMB_OP_ADD_ADDR: begin
+        thumb_raddr_a = 4'd13;
+      end
+
       default: begin
       end
     endcase
@@ -476,6 +483,10 @@ module arm7tdmi_core
 
       THUMB_OP_HI_MOV: begin
         thumb_alu_result = rm_data;
+      end
+
+      THUMB_OP_ADD_ADDR: begin
+        thumb_alu_result = thumb_add_addr_result;
       end
 
       THUMB_OP_ALU_REG: begin
@@ -723,6 +734,14 @@ module arm7tdmi_core
                 cpsr_we    <= 1'b1;
                 cpsr_wdata <= cpsr_with_flags(cpsr, thumb_flags);
                 pc_q       <= pc_q + 32'd2;
+                next_fetch_seq_q <= 1'b1;
+              end
+
+              THUMB_OP_ADD_ADDR: begin
+                reg_we    <= 1'b1;
+                reg_waddr <= rd;
+                reg_wdata <= thumb_alu_result;
+                pc_q      <= pc_q + 32'd2;
                 next_fetch_seq_q <= 1'b1;
               end
 

@@ -183,6 +183,18 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "SP-relative LDR decode mismatch");
     end
 
+    decode(16'hA305); // ADD r3, PC, #20
+    expect_op(THUMB_OP_ADD_ADDR);
+    if (decoded.rd !== 3'd3 || decoded.imm8 !== 8'h05 || decoded.sp_base) begin
+      $fatal(1, "PC-relative address add decode mismatch");
+    end
+
+    decode(16'hAC06); // ADD r4, SP, #24
+    expect_op(THUMB_OP_ADD_ADDR);
+    if (decoded.rd !== 3'd4 || decoded.imm8 !== 8'h06 || !decoded.sp_base) begin
+      $fatal(1, "SP-relative address add decode mismatch");
+    end
+
     decode(16'h4700); // BX r0
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd0) begin
