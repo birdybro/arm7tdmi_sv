@@ -745,7 +745,17 @@ module arm7tdmi_core
           if (thumb_state) begin
             retired_o <= thumb_decoded.supported;
 
-            unique case (thumb_decoded.op_class)
+            if (!thumb_decoded.supported) begin
+              retired_o        <= 1'b0;
+              exception_lr_q   <= pc_q + 32'd2;
+              exception_spsr_q <= cpsr;
+              cpsr_we          <= 1'b1;
+              cpsr_wdata       <= {cpsr[31:8], cpsr[7:6], 1'b0, MODE_UND};
+              pc_q             <= 32'h0000_0004;
+              next_fetch_seq_q <= 1'b0;
+              state_q          <= ST_EXCEPTION_SAVE;
+            end else begin
+              unique case (thumb_decoded.op_class)
               THUMB_OP_SHIFT_IMM, THUMB_OP_MOV_IMM, THUMB_OP_ADD_IMM, THUMB_OP_SUB_IMM,
               THUMB_OP_ADD_REG, THUMB_OP_SUB_REG, THUMB_OP_ADD_IMM3, THUMB_OP_SUB_IMM3: begin
                 reg_we    <= 1'b1;
@@ -979,6 +989,7 @@ module arm7tdmi_core
                 next_fetch_seq_q <= 1'b1;
               end
             endcase
+            end
           end else if (!cond_pass) begin
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
