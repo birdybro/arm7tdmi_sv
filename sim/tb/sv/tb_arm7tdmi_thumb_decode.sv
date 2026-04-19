@@ -195,6 +195,18 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "SP-relative address add decode mismatch");
     end
 
+    decode(16'hB005); // ADD SP, #20
+    expect_op(THUMB_OP_SP_ADJUST);
+    if (decoded.imm8[6:0] !== 7'h05 || decoded.sp_subtract) begin
+      $fatal(1, "SP add immediate decode mismatch");
+    end
+
+    decode(16'hB086); // SUB SP, #24
+    expect_op(THUMB_OP_SP_ADJUST);
+    if (decoded.imm8[6:0] !== 7'h06 || !decoded.sp_subtract) begin
+      $fatal(1, "SP subtract immediate decode mismatch");
+    end
+
     decode(16'h4700); // BX r0
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd0) begin

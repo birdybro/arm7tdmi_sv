@@ -116,6 +116,7 @@ package arm7tdmi_pkg;
     THUMB_OP_LS_REG,
     THUMB_OP_LS_SP,
     THUMB_OP_ADD_ADDR,
+    THUMB_OP_SP_ADJUST,
     THUMB_OP_COND_BRANCH,
     THUMB_OP_BRANCH,
     THUMB_OP_BRANCH_EXCHANGE
@@ -196,6 +197,7 @@ package arm7tdmi_pkg;
     logic            ls_half;
     logic            ls_signed;
     logic            sp_base;
+    logic            sp_subtract;
     logic            supported;
   } thumb_decoded_t;
 
