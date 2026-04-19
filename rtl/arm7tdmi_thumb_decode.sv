@@ -26,6 +26,7 @@ module arm7tdmi_thumb_decode
       ls_load:       1'b0,
       ls_byte:       1'b0,
       ls_half:       1'b0,
+      ls_signed:     1'b0,
       supported:     1'b0
     };
 
@@ -98,6 +99,48 @@ module arm7tdmi_thumb_decode
         decoded_o.op_class  = THUMB_OP_LDR_PC;
         decoded_o.rd        = instr_i[10:8];
         decoded_o.rd4       = {1'b0, instr_i[10:8]};
+        decoded_o.supported = 1'b1;
+      end
+
+      16'b0101????????????: begin
+        decoded_o.op_class  = THUMB_OP_LS_REG;
+        decoded_o.rm        = {1'b0, instr_i[8:6]};
+        unique case (instr_i[11:9])
+          3'b000: begin
+            decoded_o.ls_load = 1'b0;
+          end
+          3'b001: begin
+            decoded_o.ls_load = 1'b0;
+            decoded_o.ls_half = 1'b1;
+          end
+          3'b010: begin
+            decoded_o.ls_load = 1'b0;
+            decoded_o.ls_byte = 1'b1;
+          end
+          3'b011: begin
+            decoded_o.ls_load   = 1'b1;
+            decoded_o.ls_byte   = 1'b1;
+            decoded_o.ls_signed = 1'b1;
+          end
+          3'b100: begin
+            decoded_o.ls_load = 1'b1;
+          end
+          3'b101: begin
+            decoded_o.ls_load = 1'b1;
+            decoded_o.ls_half = 1'b1;
+          end
+          3'b110: begin
+            decoded_o.ls_load = 1'b1;
+            decoded_o.ls_byte = 1'b1;
+          end
+          3'b111: begin
+            decoded_o.ls_load   = 1'b1;
+            decoded_o.ls_half   = 1'b1;
+            decoded_o.ls_signed = 1'b1;
+          end
+          default: begin
+          end
+        endcase
         decoded_o.supported = 1'b1;
       end
 

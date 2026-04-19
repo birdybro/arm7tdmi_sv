@@ -129,6 +129,27 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "PC-relative LDR decode mismatch");
     end
 
+    decode(16'h5141); // STR r1, [r0, r5]
+    expect_op(THUMB_OP_LS_REG);
+    if (decoded.rd !== 3'd1 || decoded.rb !== 3'd0 || decoded.rm !== 4'd5 ||
+        decoded.ls_load || decoded.ls_byte || decoded.ls_half || decoded.ls_signed) begin
+      $fatal(1, "register-offset STR decode mismatch");
+    end
+
+    decode(16'h5A43); // LDRH r3, [r0, r1]
+    expect_op(THUMB_OP_LS_REG);
+    if (decoded.rd !== 3'd3 || decoded.rb !== 3'd0 || decoded.rm !== 4'd1 ||
+        !decoded.ls_load || decoded.ls_byte || !decoded.ls_half || decoded.ls_signed) begin
+      $fatal(1, "register-offset LDRH decode mismatch");
+    end
+
+    decode(16'h56C4); // LDRSB r4, [r0, r3]
+    expect_op(THUMB_OP_LS_REG);
+    if (decoded.rd !== 3'd4 || decoded.rb !== 3'd0 || decoded.rm !== 4'd3 ||
+        !decoded.ls_load || !decoded.ls_byte || decoded.ls_half || !decoded.ls_signed) begin
+      $fatal(1, "register-offset LDRSB decode mismatch");
+    end
+
     decode(16'h6041); // STR r1, [r0, #4]
     expect_op(THUMB_OP_LS_IMM);
     if (decoded.rd !== 3'd1 || decoded.rb !== 3'd0 || decoded.shift_imm !== 5'd1 ||
