@@ -144,6 +144,17 @@ module arm7tdmi_core
     end
   endfunction
 
+  function automatic logic [31:0] rotate_word_load(input logic [31:0] data,
+                                                   input logic [1:0] byte_offset);
+    unique case (byte_offset)
+      2'b00: rotate_word_load = data;
+      2'b01: rotate_word_load = {data[7:0], data[31:8]};
+      2'b10: rotate_word_load = {data[15:0], data[31:16]};
+      2'b11: rotate_word_load = {data[23:0], data[31:24]};
+      default: rotate_word_load = data;
+    endcase
+  endfunction
+
   assign rn = decoded.rn;
   assign rd = decoded.rd;
   assign rm = decoded.rm;
@@ -542,7 +553,7 @@ module arm7tdmi_core
               state_q      <= ST_SWAP_WRITE;
             end else if (mem_load_q) begin
               if (mem_rd_q == 4'd15) begin
-                pc_q <= bus_rdata_i & 32'hFFFF_FFFC;
+                pc_q <= rotate_word_load(bus_rdata_i, mem_addr_q[1:0]) & 32'hFFFF_FFFC;
                 next_fetch_seq_q <= 1'b0;
               end else begin
                 reg_we    <= 1'b1;
@@ -551,7 +562,7 @@ module arm7tdmi_core
                                                            {24'h0, bus_rdata_i[7:0]}) :
                                         (mem_half_q ? (mem_signed_q ? {{16{bus_rdata_i[15]}}, bus_rdata_i[15:0]} :
                                                                       {16'h0, bus_rdata_i[15:0]}) :
-                                                      bus_rdata_i);
+                                                      rotate_word_load(bus_rdata_i, mem_addr_q[1:0]));
               end
 
               if (mem_wb_q) begin
