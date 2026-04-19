@@ -207,6 +207,18 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "SP subtract immediate decode mismatch");
     end
 
+    decode(16'hC307); // STMIA r3!, {r0-r2}
+    expect_op(THUMB_OP_BLOCK_TRANSFER);
+    if (decoded.rb !== 3'd3 || decoded.imm8 !== 8'h07 || decoded.ls_load) begin
+      $fatal(1, "Thumb STMIA decode mismatch");
+    end
+
+    decode(16'hCF70); // LDMIA r7!, {r4-r6}
+    expect_op(THUMB_OP_BLOCK_TRANSFER);
+    if (decoded.rb !== 3'd7 || decoded.imm8 !== 8'h70 || !decoded.ls_load) begin
+      $fatal(1, "Thumb LDMIA decode mismatch");
+    end
+
     decode(16'h4700); // BX r0
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd0) begin
