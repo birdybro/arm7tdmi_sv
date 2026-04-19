@@ -37,6 +37,7 @@ module arm7tdmi_core
     ST_SWAP_WB,
     ST_BLOCK_MEM,
     ST_BLOCK_WB,
+    ST_BLOCK_PC_WB,
     ST_EXCEPTION_SAVE
   } state_t;
 
@@ -66,6 +67,7 @@ module arm7tdmi_core
   logic        block_thumb_q;
   logic [3:0]  block_rn_q;
   logic [31:0] block_wbdata_q;
+  logic [31:0] block_pc_wdata_q;
   logic [31:0] exception_lr_q;
   logic [31:0] exception_spsr_q;
   logic [3:0]  mul64_hi_waddr_q;
@@ -171,6 +173,10 @@ module arm7tdmi_core
   logic [15:0] thumb_block_reglist;
   logic [4:0]  thumb_block_reg_count;
   logic [31:0] thumb_block_byte_count;
+  logic [15:0] thumb_stack_reglist;
+  logic [4:0]  thumb_stack_reg_count;
+  logic [31:0] thumb_stack_byte_count;
+  logic [31:0] block_pc_load_addr;
 
   function automatic logic [3:0] first_reg_in_list(input logic [15:0] reglist);
     first_reg_in_list = 4'd0;
@@ -230,6 +236,13 @@ module arm7tdmi_core
   assign thumb_block_reglist = {8'h00, thumb_decoded.imm8};
   assign thumb_block_reg_count = reglist_count(thumb_block_reglist);
   assign thumb_block_byte_count = {25'h0, thumb_block_reg_count, 2'b00};
+  assign thumb_stack_reglist = thumb_decoded.ls_load ?
+                               {thumb_decoded.stack_extra, 7'h00, thumb_decoded.imm8} :
+                               {1'b0, thumb_decoded.stack_extra, 6'h00, thumb_decoded.imm8};
+  assign thumb_stack_reg_count = reglist_count(thumb_stack_reglist);
+  assign thumb_stack_byte_count = {25'h0, thumb_stack_reg_count, 2'b00};
+  assign block_pc_load_addr = block_thumb_q ? (bus_rdata_i & 32'hFFFF_FFFE) :
+                                              (bus_rdata_i & 32'hFFFF_FFFC);
   assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
                    ((decoded.register_shift || (decoded.op_class == ARM_OP_MULTIPLY) ||
                      (decoded.op_class == ARM_OP_LONG_MULTIPLY)) ? decoded.rs : rd);
@@ -460,6 +473,10 @@ module arm7tdmi_core
         thumb_raddr_a = 4'd13;
       end
 
+      THUMB_OP_STACK: begin
+        thumb_raddr_a = 4'd13;
+      end
+
       THUMB_OP_BLOCK_TRANSFER: begin
         thumb_raddr_a = {1'b0, thumb_decoded.rb};
       end
@@ -659,6 +676,7 @@ module arm7tdmi_core
       block_thumb_q    <= 1'b0;
       block_rn_q       <= 4'h0;
       block_wbdata_q   <= 32'h0000_0000;
+      block_pc_wdata_q <= 32'h0000_0000;
       exception_lr_q   <= 32'h0000_0000;
       exception_spsr_q <= 32'h0000_0000;
       mul64_hi_waddr_q <= 4'h0;
@@ -790,6 +808,22 @@ module arm7tdmi_core
                 block_thumb_q <= 1'b1;
                 block_rn_q <= {1'b0, thumb_decoded.rb};
                 block_wbdata_q <= rn_data + thumb_block_byte_count;
+                state_q <= ST_BLOCK_MEM;
+              end
+
+              THUMB_OP_STACK: begin
+                retired_o <= 1'b0;
+                mem_addr_q <= thumb_decoded.ls_load ? rn_data : (rn_data - thumb_stack_byte_count);
+                block_reglist_q <= thumb_stack_reglist;
+                block_reg_q <= first_reg_in_list(thumb_stack_reglist);
+                block_load_q <= thumb_decoded.ls_load;
+                block_wb_q <= 1'b1;
+                block_restore_cpsr_q <= 1'b0;
+                block_user_bank_q <= 1'b0;
+                block_thumb_q <= 1'b1;
+                block_rn_q <= 4'd13;
+                block_wbdata_q <= thumb_decoded.ls_load ? (rn_data + thumb_stack_byte_count) :
+                                                           (rn_data - thumb_stack_byte_count);
                 state_q <= ST_BLOCK_MEM;
               end
 
@@ -1136,8 +1170,7 @@ module arm7tdmi_core
           if (bus_ready_i) begin
             if (block_load_q) begin
               if (block_reg_q == 4'd15) begin
-                pc_q <= bus_rdata_i & 32'hFFFF_FFFC;
-                next_fetch_seq_q <= 1'b0;
+                block_pc_wdata_q <= block_pc_load_addr;
                 if (block_restore_cpsr_q) begin
                   cpsr_we    <= 1'b1;
                   cpsr_wdata <= spsr;
@@ -1152,8 +1185,14 @@ module arm7tdmi_core
 
             if (block_last_reg) begin
               if (block_load_q && block_reg_q == 4'd15) begin
-                retired_o <= 1'b1;
-                state_q <= ST_FETCH;
+                if (block_wb_q) begin
+                  state_q <= ST_BLOCK_PC_WB;
+                end else begin
+                  retired_o <= 1'b1;
+                  pc_q <= block_pc_load_addr;
+                  next_fetch_seq_q <= 1'b0;
+                  state_q <= ST_FETCH;
+                end
               end else if (block_wb_q) begin
                 state_q <= ST_BLOCK_WB;
               end else begin
@@ -1177,6 +1216,17 @@ module arm7tdmi_core
 
           retired_o <= 1'b1;
           pc_q <= pc_q + (block_thumb_q ? 32'd2 : 32'd4);
+          next_fetch_seq_q <= 1'b0;
+          state_q <= ST_FETCH;
+        end
+
+        ST_BLOCK_PC_WB: begin
+          reg_we    <= 1'b1;
+          reg_waddr <= block_rn_q;
+          reg_wdata <= block_wbdata_q;
+
+          retired_o <= 1'b1;
+          pc_q <= block_pc_wdata_q;
           next_fetch_seq_q <= 1'b0;
           state_q <= ST_FETCH;
         end

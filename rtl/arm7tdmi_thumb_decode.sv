@@ -29,6 +29,7 @@ module arm7tdmi_thumb_decode
       ls_signed:     1'b0,
       sp_base:       1'b0,
       sp_subtract:   1'b0,
+      stack_extra:   1'b0,
       supported:     1'b0
     };
 
@@ -180,6 +181,13 @@ module arm7tdmi_thumb_decode
         decoded_o.op_class    = THUMB_OP_SP_ADJUST;
         decoded_o.sp_subtract = instr_i[7];
         decoded_o.supported   = 1'b1;
+      end
+
+      16'b1011?10?????????: begin
+        decoded_o.op_class    = THUMB_OP_STACK;
+        decoded_o.ls_load     = instr_i[11];
+        decoded_o.stack_extra = instr_i[8];
+        decoded_o.supported   = instr_i[8] || (instr_i[7:0] != 8'h00);
       end
 
       16'b1100????????????: begin

@@ -207,6 +207,18 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "SP subtract immediate decode mismatch");
     end
 
+    decode(16'hB507); // PUSH {r0-r2, lr}
+    expect_op(THUMB_OP_STACK);
+    if (decoded.imm8 !== 8'h07 || decoded.ls_load || !decoded.stack_extra) begin
+      $fatal(1, "Thumb PUSH decode mismatch");
+    end
+
+    decode(16'hBD70); // POP {r4-r6, pc}
+    expect_op(THUMB_OP_STACK);
+    if (decoded.imm8 !== 8'h70 || !decoded.ls_load || !decoded.stack_extra) begin
+      $fatal(1, "Thumb POP decode mismatch");
+    end
+
     decode(16'hC307); // STMIA r3!, {r0-r2}
     expect_op(THUMB_OP_BLOCK_TRANSFER);
     if (decoded.rb !== 3'd3 || decoded.imm8 !== 8'h07 || decoded.ls_load) begin
