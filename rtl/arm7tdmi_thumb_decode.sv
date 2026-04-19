@@ -197,6 +197,11 @@ module arm7tdmi_thumb_decode
         decoded_o.supported = instr_i[7:0] != 8'h00;
       end
 
+      16'b11011111????????: begin
+        decoded_o.op_class  = THUMB_OP_SWI;
+        decoded_o.supported = 1'b1;
+      end
+
       16'b01000100????????: begin
         decoded_o.op_class  = THUMB_OP_HI_ADD;
         decoded_o.rd4       = {instr_i[7], instr_i[2:0]};
@@ -221,10 +226,11 @@ module arm7tdmi_thumb_decode
         decoded_o.supported = 1'b1;
       end
 
-      16'b1101????????????: begin
-        decoded_o.op_class  = (instr_i[11:8] < 4'hE) ? THUMB_OP_COND_BRANCH :
-                                                         THUMB_OP_UNDEFINED;
-        decoded_o.supported = instr_i[11:8] < 4'hE;
+      16'b11010???????????,
+      16'b110110??????????,
+      16'b1101110?????????: begin
+        decoded_o.op_class  = THUMB_OP_COND_BRANCH;
+        decoded_o.supported = 1'b1;
       end
 
       16'b11100???????????: begin

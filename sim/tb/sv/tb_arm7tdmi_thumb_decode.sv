@@ -267,6 +267,12 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "conditional branch decode mismatch");
     end
 
+    decode(16'hDF2A); // SWI #0x2a
+    expect_op(THUMB_OP_SWI);
+    if (decoded.imm8 !== 8'h2A) begin
+      $fatal(1, "Thumb SWI decode mismatch");
+    end
+
     decode(16'hDE00);
     if (decoded.supported) begin
       $fatal(1, "undefined Thumb conditional branch decoded as supported");

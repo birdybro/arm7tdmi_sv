@@ -930,6 +930,17 @@ module arm7tdmi_core
                 next_fetch_seq_q <= 1'b0;
               end
 
+              THUMB_OP_SWI: begin
+                retired_o        <= 1'b0;
+                exception_lr_q   <= pc_q + 32'd2;
+                exception_spsr_q <= cpsr;
+                cpsr_we          <= 1'b1;
+                cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_SVC};
+                pc_q             <= 32'h0000_0008;
+                next_fetch_seq_q <= 1'b0;
+                state_q          <= ST_EXCEPTION_SAVE;
+              end
+
               default: begin
                 unsupported_o <= 1'b1;
                 pc_q <= pc_q + 32'd2;
