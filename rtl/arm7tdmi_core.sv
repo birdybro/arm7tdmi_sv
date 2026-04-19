@@ -274,8 +274,11 @@ module arm7tdmi_core
 
   always_comb begin
     alu_op                = decoded.alu_op;
-    shift_type            = decoded.shift_type;
-    shift_amount          = decoded.register_shift ? rs_shift_amount : {3'b000, decoded.shift_imm};
+    shift_type            = (thumb_state && (thumb_decoded.op_class == THUMB_OP_SHIFT_IMM)) ?
+                            thumb_decoded.shift_type : decoded.shift_type;
+    shift_amount          = (thumb_state && (thumb_decoded.op_class == THUMB_OP_SHIFT_IMM)) ?
+                            {3'b000, thumb_decoded.shift_imm} :
+                            (decoded.register_shift ? rs_shift_amount : {3'b000, decoded.shift_imm});
     alu_b                 = shifted_rm;
     shifter_carry         = shifted_rm_carry;
     execute_cond_pass     = thumb_state ? 1'b1 : cond_pass;
@@ -318,6 +321,13 @@ module arm7tdmi_core
         thumb_alu_result = thumb_imm32;
         thumb_flags.n    = thumb_imm32[31];
         thumb_flags.z    = thumb_imm32 == 32'h0000_0000;
+      end
+
+      THUMB_OP_SHIFT_IMM: begin
+        thumb_alu_result = shifted_rm;
+        thumb_flags.n    = shifted_rm[31];
+        thumb_flags.z    = shifted_rm == 32'h0000_0000;
+        thumb_flags.c    = shifted_rm_carry;
       end
 
       THUMB_OP_CMP_IMM, THUMB_OP_SUB_IMM: begin
@@ -474,7 +484,7 @@ module arm7tdmi_core
             retired_o <= thumb_decoded.supported;
 
             unique case (thumb_decoded.op_class)
-              THUMB_OP_MOV_IMM, THUMB_OP_ADD_IMM, THUMB_OP_SUB_IMM: begin
+              THUMB_OP_SHIFT_IMM, THUMB_OP_MOV_IMM, THUMB_OP_ADD_IMM, THUMB_OP_SUB_IMM: begin
                 reg_we    <= 1'b1;
                 reg_waddr <= rd;
                 reg_wdata <= thumb_alu_result;

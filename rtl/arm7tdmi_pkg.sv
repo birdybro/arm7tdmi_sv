@@ -98,6 +98,7 @@ package arm7tdmi_pkg;
 
   typedef enum logic [2:0] {
     THUMB_OP_UNDEFINED,
+    THUMB_OP_SHIFT_IMM,
     THUMB_OP_MOV_IMM,
     THUMB_OP_CMP_IMM,
     THUMB_OP_ADD_IMM,
@@ -145,6 +146,8 @@ package arm7tdmi_pkg;
     thumb_op_class_t op_class;
     logic [2:0]      rd;
     logic [3:0]      rm;
+    arm_shift_t      shift_type;
+    logic [4:0]      shift_imm;
     logic [7:0]      imm8;
     logic [10:0]     branch_imm11;
     logic            supported;

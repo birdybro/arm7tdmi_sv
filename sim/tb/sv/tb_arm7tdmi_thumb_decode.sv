@@ -24,6 +24,27 @@ module tb_arm7tdmi_thumb_decode
   endtask
 
   initial begin
+    decode(16'h0048); // LSL r0, r1, #1
+    expect_op(THUMB_OP_SHIFT_IMM);
+    if (decoded.rd !== 3'd0 || decoded.rm !== 4'd1 ||
+        decoded.shift_type !== SHIFT_LSL || decoded.shift_imm !== 5'd1) begin
+      $fatal(1, "LSL immediate decode mismatch");
+    end
+
+    decode(16'h0851); // LSR r1, r2, #1
+    expect_op(THUMB_OP_SHIFT_IMM);
+    if (decoded.rd !== 3'd1 || decoded.rm !== 4'd2 ||
+        decoded.shift_type !== SHIFT_LSR || decoded.shift_imm !== 5'd1) begin
+      $fatal(1, "LSR immediate decode mismatch");
+    end
+
+    decode(16'h105A); // ASR r2, r3, #1
+    expect_op(THUMB_OP_SHIFT_IMM);
+    if (decoded.rd !== 3'd2 || decoded.rm !== 4'd3 ||
+        decoded.shift_type !== SHIFT_ASR || decoded.shift_imm !== 5'd1) begin
+      $fatal(1, "ASR immediate decode mismatch");
+    end
+
     decode(16'h212A); // MOV r1, #0x2a
     expect_op(THUMB_OP_MOV_IMM);
     if (decoded.rd !== 3'd1 || decoded.imm8 !== 8'h2A) begin
@@ -66,7 +87,7 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "B immediate decode mismatch");
     end
 
-    decode(16'h0000);
+    decode(16'hDE00);
     if (decoded.supported) begin
       $fatal(1, "unsupported Thumb opcode decoded as supported");
     end
