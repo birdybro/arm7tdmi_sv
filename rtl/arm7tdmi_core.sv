@@ -134,6 +134,8 @@ module arm7tdmi_core
   logic [31:0] thumb_op2;
   logic [31:0] thumb_alu_result;
   logic [31:0] thumb_pc_load_addr;
+  logic [31:0] thumb_ls_imm_offset;
+  logic [31:0] thumb_ls_addr;
   logic [32:0] thumb_add_wide;
   logic [32:0] thumb_sub_wide;
   logic [32:0] thumb_adc_wide;
@@ -321,6 +323,10 @@ module arm7tdmi_core
     thumb_alu_result      = 32'h0000_0000;
     thumb_pc_load_addr    = ((pc_q + 32'd4) & 32'hFFFF_FFFC) +
                             {22'h0, thumb_decoded.imm8, 2'b00};
+    thumb_ls_imm_offset   = thumb_decoded.ls_byte ? {27'h0, thumb_decoded.shift_imm} :
+                            (thumb_decoded.ls_half ? {26'h0, thumb_decoded.shift_imm, 1'b0} :
+                                                     {25'h0, thumb_decoded.shift_imm, 2'b00});
+    thumb_ls_addr         = rn_data + thumb_ls_imm_offset;
     thumb_alu_reg_write   = 1'b0;
     thumb_flags           = flags;
     thumb_next_pc         = pc_q + 32'd2;
@@ -412,6 +418,10 @@ module arm7tdmi_core
           default: begin
           end
         endcase
+      end
+
+      THUMB_OP_LS_IMM: begin
+        thumb_raddr_a = {1'b0, thumb_decoded.rb};
       end
 
       default: begin
@@ -729,6 +739,25 @@ module arm7tdmi_core
                 mem_rn_q     <= 4'h0;
                 mem_rd_q     <= rd;
                 mem_wdata_q  <= 32'h0000_0000;
+                mem_wbdata_q <= 32'h0000_0000;
+                state_q      <= ST_MEM;
+              end
+
+              THUMB_OP_LS_IMM: begin
+                retired_o    <= 1'b0;
+                mem_addr_q   <= thumb_ls_addr;
+                mem_write_q  <= !thumb_decoded.ls_load;
+                mem_load_q   <= thumb_decoded.ls_load;
+                mem_byte_q   <= thumb_decoded.ls_byte;
+                mem_half_q   <= thumb_decoded.ls_half;
+                mem_signed_q <= 1'b0;
+                mem_swap_q   <= 1'b0;
+                mem_thumb_q  <= 1'b1;
+                mem_wb_q     <= 1'b0;
+                mem_rn_q     <= 4'h0;
+                mem_rd_q     <= rd;
+                mem_wdata_q  <= thumb_decoded.ls_byte ? {24'h0, rd_data[7:0]} :
+                                (thumb_decoded.ls_half ? {16'h0, rd_data[15:0]} : rd_data);
                 mem_wbdata_q <= 32'h0000_0000;
                 state_q      <= ST_MEM;
               end

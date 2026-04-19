@@ -129,6 +129,27 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "PC-relative LDR decode mismatch");
     end
 
+    decode(16'h6041); // STR r1, [r0, #4]
+    expect_op(THUMB_OP_LS_IMM);
+    if (decoded.rd !== 3'd1 || decoded.rb !== 3'd0 || decoded.shift_imm !== 5'd1 ||
+        decoded.ls_load || decoded.ls_byte || decoded.ls_half) begin
+      $fatal(1, "immediate STR decode mismatch");
+    end
+
+    decode(16'h7943); // LDRB r3, [r0, #5]
+    expect_op(THUMB_OP_LS_IMM);
+    if (decoded.rd !== 3'd3 || decoded.rb !== 3'd0 || decoded.shift_imm !== 5'd5 ||
+        !decoded.ls_load || !decoded.ls_byte || decoded.ls_half) begin
+      $fatal(1, "immediate LDRB decode mismatch");
+    end
+
+    decode(16'h88C4); // LDRH r4, [r0, #6]
+    expect_op(THUMB_OP_LS_IMM);
+    if (decoded.rd !== 3'd4 || decoded.rb !== 3'd0 || decoded.shift_imm !== 5'd3 ||
+        !decoded.ls_load || decoded.ls_byte || !decoded.ls_half) begin
+      $fatal(1, "immediate LDRH decode mismatch");
+    end
+
     decode(16'h4700); // BX r0
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd0) begin

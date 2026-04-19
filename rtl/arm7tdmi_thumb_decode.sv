@@ -14,6 +14,7 @@ module arm7tdmi_thumb_decode
       rd4:           {1'b0, instr_i[2:0]},
       rn:            instr_i[8:6],
       rs:            instr_i[5:3],
+      rb:            instr_i[5:3],
       rm:            {instr_i[6], instr_i[5:3]},
       alu_op:        thumb_alu_op_t'(instr_i[9:6]),
       shift_type:    arm_shift_t'(instr_i[12:11]),
@@ -22,6 +23,9 @@ module arm7tdmi_thumb_decode
       imm8:          instr_i[7:0],
       branch_imm8:   instr_i[7:0],
       branch_imm11:  instr_i[10:0],
+      ls_load:       1'b0,
+      ls_byte:       1'b0,
+      ls_half:       1'b0,
       supported:     1'b0
     };
 
@@ -94,6 +98,20 @@ module arm7tdmi_thumb_decode
         decoded_o.op_class  = THUMB_OP_LDR_PC;
         decoded_o.rd        = instr_i[10:8];
         decoded_o.rd4       = {1'b0, instr_i[10:8]};
+        decoded_o.supported = 1'b1;
+      end
+
+      16'b011?????????????: begin
+        decoded_o.op_class  = THUMB_OP_LS_IMM;
+        decoded_o.ls_load   = instr_i[11];
+        decoded_o.ls_byte   = instr_i[12];
+        decoded_o.supported = 1'b1;
+      end
+
+      16'b1000????????????: begin
+        decoded_o.op_class  = THUMB_OP_LS_IMM;
+        decoded_o.ls_load   = instr_i[11];
+        decoded_o.ls_half   = 1'b1;
         decoded_o.supported = 1'b1;
       end
 

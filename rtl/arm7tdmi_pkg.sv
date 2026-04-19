@@ -112,6 +112,7 @@ package arm7tdmi_pkg;
     THUMB_OP_HI_MOV,
     THUMB_OP_ALU_REG,
     THUMB_OP_LDR_PC,
+    THUMB_OP_LS_IMM,
     THUMB_OP_COND_BRANCH,
     THUMB_OP_BRANCH,
     THUMB_OP_BRANCH_EXCHANGE
@@ -178,6 +179,7 @@ package arm7tdmi_pkg;
     logic [3:0]      rd4;
     logic [2:0]      rn;
     logic [2:0]      rs;
+    logic [2:0]      rb;
     logic [3:0]      rm;
     thumb_alu_op_t   alu_op;
     arm_shift_t      shift_type;
@@ -186,6 +188,9 @@ package arm7tdmi_pkg;
     logic [7:0]      imm8;
     logic [7:0]      branch_imm8;
     logic [10:0]     branch_imm11;
+    logic            ls_load;
+    logic            ls_byte;
+    logic            ls_half;
     logic            supported;
   } thumb_decoded_t;
 
