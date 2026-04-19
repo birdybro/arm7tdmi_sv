@@ -74,6 +74,7 @@ module arm7tdmi_core
   logic [3:0] rm;
   logic [3:0] thumb_raddr_a;
   logic [3:0] thumb_raddr_b;
+  logic [3:0] thumb_waddr;
   logic [3:0] raddr_c;
   logic [3:0] raddr_d;
   arm_decoded_t decoded;
@@ -86,7 +87,6 @@ module arm7tdmi_core
   logic [31:0] spsr;
   arm_flags_t flags;
   arm_mode_t  mode;
-  logic        unused_thumb_rd;
 
   logic       reg_we;
   logic [3:0] reg_waddr;
@@ -181,12 +181,11 @@ module arm7tdmi_core
 
   assign thumb_state = cpsr[5];
   assign rn = thumb_state ? thumb_raddr_a : decoded.rn;
-  assign rd = thumb_state ? thumb_decoded.rd4 : decoded.rd;
+  assign rd = thumb_state ? thumb_waddr : decoded.rd;
   assign rm = thumb_state ? thumb_raddr_b : decoded.rm;
 
   assign flags = cpsr_flags(cpsr);
   assign mode  = arm_mode_t'(cpsr[4:0]);
-  assign unused_thumb_rd = ^thumb_decoded.rd;
   assign rs_shift_amount = rs_data[7:0];
   assign unused_rs_upper = ^rs_data[31:8];
   assign unused_ls_modes = decoded.ls_pre_index ^ decoded.ls_byte ^ decoded.ls_writeback;
@@ -299,6 +298,7 @@ module arm7tdmi_core
     bx_cpsr               = cpsr;
     thumb_raddr_a         = thumb_decoded.rd4;
     thumb_raddr_b         = thumb_decoded.rm;
+    thumb_waddr           = {1'b0, thumb_decoded.rd};
     thumb_imm32           = {24'h0, thumb_decoded.imm8};
     thumb_op2             = thumb_imm32;
     thumb_add_wide        = {1'b0, rn_data} + {1'b0, thumb_op2};
@@ -350,6 +350,7 @@ module arm7tdmi_core
       THUMB_OP_HI_ADD, THUMB_OP_HI_CMP, THUMB_OP_HI_MOV: begin
         thumb_raddr_a  = thumb_decoded.rd4;
         thumb_raddr_b  = thumb_decoded.rm;
+        thumb_waddr    = thumb_decoded.rd4;
         thumb_op2      = rm_data;
         thumb_add_wide = {1'b0, rn_data} + {1'b0, thumb_op2};
         thumb_sub_wide = {1'b0, rn_data} - {1'b0, thumb_op2};
@@ -552,7 +553,7 @@ module arm7tdmi_core
 
               THUMB_OP_HI_ADD, THUMB_OP_HI_MOV: begin
                 if (rd == 4'd15) begin
-                  pc_q <= thumb_alu_result & (thumb_state ? 32'hFFFF_FFFE : 32'hFFFF_FFFC);
+                  pc_q <= thumb_alu_result & 32'hFFFF_FFFE;
                   next_fetch_seq_q <= 1'b0;
                 end else begin
                   reg_we    <= 1'b1;
