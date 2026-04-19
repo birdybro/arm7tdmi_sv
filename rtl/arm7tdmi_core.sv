@@ -51,6 +51,7 @@ module arm7tdmi_core
   logic        mem_half_q;
   logic        mem_signed_q;
   logic        mem_swap_q;
+  logic        mem_thumb_q;
   logic        mem_wb_q;
   logic [3:0]  mem_rn_q;
   logic [3:0]  mem_rd_q;
@@ -132,6 +133,7 @@ module arm7tdmi_core
   logic [31:0] thumb_imm32;
   logic [31:0] thumb_op2;
   logic [31:0] thumb_alu_result;
+  logic [31:0] thumb_pc_load_addr;
   logic [32:0] thumb_add_wide;
   logic [32:0] thumb_sub_wide;
   logic [32:0] thumb_adc_wide;
@@ -317,6 +319,8 @@ module arm7tdmi_core
     thumb_neg_wide        = 33'h0;
     thumb_mul_result      = 32'h0000_0000;
     thumb_alu_result      = 32'h0000_0000;
+    thumb_pc_load_addr    = ((pc_q + 32'd4) & 32'hFFFF_FFFC) +
+                            {22'h0, thumb_decoded.imm8, 2'b00};
     thumb_alu_reg_write   = 1'b0;
     thumb_flags           = flags;
     thumb_next_pc         = pc_q + 32'd2;
@@ -582,6 +586,7 @@ module arm7tdmi_core
       mem_half_q       <= 1'b0;
       mem_signed_q     <= 1'b0;
       mem_swap_q       <= 1'b0;
+      mem_thumb_q      <= 1'b0;
       mem_wb_q         <= 1'b0;
       mem_rn_q         <= 4'h0;
       mem_rd_q         <= 4'h0;
@@ -710,6 +715,24 @@ module arm7tdmi_core
                 next_fetch_seq_q <= 1'b1;
               end
 
+              THUMB_OP_LDR_PC: begin
+                retired_o    <= 1'b0;
+                mem_addr_q   <= thumb_pc_load_addr;
+                mem_write_q  <= 1'b0;
+                mem_load_q   <= 1'b1;
+                mem_byte_q   <= 1'b0;
+                mem_half_q   <= 1'b0;
+                mem_signed_q <= 1'b0;
+                mem_swap_q   <= 1'b0;
+                mem_thumb_q  <= 1'b1;
+                mem_wb_q     <= 1'b0;
+                mem_rn_q     <= 4'h0;
+                mem_rd_q     <= rd;
+                mem_wdata_q  <= 32'h0000_0000;
+                mem_wbdata_q <= 32'h0000_0000;
+                state_q      <= ST_MEM;
+              end
+
               THUMB_OP_BRANCH: begin
                 pc_q <= thumb_next_pc;
                 next_fetch_seq_q <= 1'b0;
@@ -824,6 +847,7 @@ module arm7tdmi_core
             mem_half_q  <= 1'b0;
             mem_signed_q <= 1'b0;
             mem_swap_q  <= 1'b0;
+            mem_thumb_q <= 1'b0;
             mem_wb_q    <= decoded.ls_writeback || !decoded.ls_pre_index;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
@@ -838,6 +862,7 @@ module arm7tdmi_core
             mem_half_q  <= decoded.hword_transfer_type != 2'b10;
             mem_signed_q <= decoded.hword_transfer_type != 2'b01;
             mem_swap_q  <= 1'b0;
+            mem_thumb_q <= 1'b0;
             mem_wb_q    <= decoded.ls_writeback || !decoded.ls_pre_index;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
@@ -852,6 +877,7 @@ module arm7tdmi_core
             mem_half_q  <= 1'b0;
             mem_signed_q <= 1'b0;
             mem_swap_q  <= 1'b1;
+            mem_thumb_q <= 1'b0;
             mem_wb_q    <= 1'b0;
             mem_rn_q    <= rn;
             mem_rd_q    <= rd;
@@ -920,7 +946,7 @@ module arm7tdmi_core
               end else begin
                 retired_o <= 1'b1;
                 if (mem_rd_q != 4'd15) begin
-                  pc_q <= pc_q + 32'd4;
+                  pc_q <= pc_q + (mem_thumb_q ? 32'd2 : 32'd4);
                   next_fetch_seq_q <= 1'b0;
                 end
                 state_q <= ST_FETCH;
@@ -930,12 +956,12 @@ module arm7tdmi_core
               reg_waddr <= mem_rn_q;
               reg_wdata <= mem_wbdata_q;
               retired_o <= 1'b1;
-              pc_q <= pc_q + 32'd4;
+              pc_q <= pc_q + (mem_thumb_q ? 32'd2 : 32'd4);
               next_fetch_seq_q <= 1'b0;
               state_q <= ST_FETCH;
             end else begin
               retired_o <= 1'b1;
-              pc_q <= pc_q + 32'd4;
+              pc_q <= pc_q + (mem_thumb_q ? 32'd2 : 32'd4);
               next_fetch_seq_q <= 1'b0;
               state_q <= ST_FETCH;
             end

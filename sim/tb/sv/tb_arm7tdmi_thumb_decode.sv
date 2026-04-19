@@ -123,6 +123,12 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "ALU register MUL decode mismatch");
     end
 
+    decode(16'h4A01); // LDR r2, [PC, #4]
+    expect_op(THUMB_OP_LDR_PC);
+    if (decoded.rd !== 3'd2 || decoded.imm8 !== 8'h01) begin
+      $fatal(1, "PC-relative LDR decode mismatch");
+    end
+
     decode(16'h4700); // BX r0
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd0) begin
