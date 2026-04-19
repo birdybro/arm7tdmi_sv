@@ -13,9 +13,11 @@ module arm7tdmi_regfile
   input  logic [3:0] raddr_b_i,
   input  logic [3:0] raddr_c_i,
   input  logic       raddr_c_user_i,
+  input  logic [3:0] raddr_d_i,
   output logic [31:0] rdata_a_o,
   output logic [31:0] rdata_b_o,
   output logic [31:0] rdata_c_o,
+  output logic [31:0] rdata_d_o,
 
   input  logic       we_i,
   input  logic [3:0] waddr_i,
@@ -85,6 +87,7 @@ module arm7tdmi_regfile
   assign rdata_a_o = read_reg(mode_i, raddr_a_i);
   assign rdata_b_o = read_reg(mode_i, raddr_b_i);
   assign rdata_c_o = read_reg(raddr_c_user_i ? MODE_USR : mode_i, raddr_c_i);
+  assign rdata_d_o = read_reg(mode_i, raddr_d_i);
   assign cpsr_o    = cpsr_q;
   assign spsr_o    = read_spsr(mode_i);
 

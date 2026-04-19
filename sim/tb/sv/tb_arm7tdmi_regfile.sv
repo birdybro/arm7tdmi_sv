@@ -11,9 +11,11 @@ module tb_arm7tdmi_regfile
   logic [3:0] raddr_b;
   logic [3:0] raddr_c;
   logic raddr_c_user;
+  logic [3:0] raddr_d;
   logic [31:0] rdata_a;
   logic [31:0] rdata_b;
   logic [31:0] rdata_c;
+  logic [31:0] rdata_d;
   logic we;
   logic [3:0] waddr;
   logic [31:0] wdata;
@@ -34,9 +36,11 @@ module tb_arm7tdmi_regfile
     .raddr_b_i(raddr_b),
     .raddr_c_i(raddr_c),
     .raddr_c_user_i(raddr_c_user),
+    .raddr_d_i(raddr_d),
     .rdata_a_o(rdata_a),
     .rdata_b_o(rdata_b),
     .rdata_c_o(rdata_c),
+    .rdata_d_o(rdata_d),
     .we_i(we),
     .waddr_i(waddr),
     .wdata_i(wdata),
@@ -88,10 +92,12 @@ module tb_arm7tdmi_regfile
     raddr_a = addr;
     raddr_b = addr;
     raddr_c = addr;
+    raddr_d = addr;
     #1;
-    if (rdata_a !== expected || rdata_b !== expected || rdata_c !== expected) begin
-      $fatal(1, "mode=%05b r%0d expected %08x got a=%08x b=%08x c=%08x",
-             mode_t, addr, expected, rdata_a, rdata_b, rdata_c);
+    if (rdata_a !== expected || rdata_b !== expected ||
+        rdata_c !== expected || rdata_d !== expected) begin
+      $fatal(1, "mode=%05b r%0d expected %08x got a=%08x b=%08x c=%08x d=%08x",
+             mode_t, addr, expected, rdata_a, rdata_b, rdata_c, rdata_d);
     end
   endtask
 
@@ -134,6 +140,7 @@ module tb_arm7tdmi_regfile
     raddr_b = 4'h0;
     raddr_c = 4'h0;
     raddr_c_user = 1'b0;
+    raddr_d = 4'h0;
     we = 1'b0;
     wuser = 1'b0;
     waddr = 4'h0;

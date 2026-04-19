@@ -68,8 +68,9 @@ module arm7tdmi_arm_decode
           decoded_o.op_class = ARM_OP_LONG_MULTIPLY;
           decoded_o.rd = instr_i[15:12];
           decoded_o.rn = instr_i[19:16];
-          decoded_o.supported = !instr_i[21] && (instr_i[19:16] != instr_i[15:12]) &&
-                                (instr_i[19:16] != 4'd15) && (instr_i[15:12] != 4'd15);
+          decoded_o.supported = (instr_i[19:16] != instr_i[15:12]) &&
+                                (instr_i[19:16] != 4'd15) && (instr_i[15:12] != 4'd15) &&
+                                (instr_i[11:8] != 4'd15) && (instr_i[3:0] != 4'd15);
         end else if (is_multiply) begin
           decoded_o.op_class = ARM_OP_MULTIPLY;
           decoded_o.rd = instr_i[19:16];

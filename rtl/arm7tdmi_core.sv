@@ -73,10 +73,12 @@ module arm7tdmi_core
   logic [3:0] rd;
   logic [3:0] rm;
   logic [3:0] raddr_c;
+  logic [3:0] raddr_d;
   arm_decoded_t decoded;
   logic [31:0] rn_data;
   logic [31:0] rm_data;
   logic [31:0] rs_data;
+  logic [31:0] rd_data;
   logic [31:0] cpsr;
   logic [31:0] spsr;
   arm_flags_t flags;
@@ -110,6 +112,8 @@ module arm7tdmi_core
   logic        alu_write_result;
   logic        alu_arithmetic;
   logic [31:0] mul_result;
+  logic [63:0] mul64_product;
+  logic [63:0] mul64_accumulator;
   logic [63:0] mul64_result;
   arm_flags_t  mul_flags;
 
@@ -175,7 +179,9 @@ module arm7tdmi_core
   assign block_byte_count = {25'h0, block_reg_count, 2'b00};
   assign block_down_offset = {25'h0, block_reg_count - 5'd1, 2'b00};
   assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
-                   ((decoded.register_shift || decoded.op_class == ARM_OP_MULTIPLY) ? decoded.rs : rd);
+                   ((decoded.register_shift || (decoded.op_class == ARM_OP_MULTIPLY) ||
+                     (decoded.op_class == ARM_OP_LONG_MULTIPLY)) ? decoded.rs : rd);
+  assign raddr_d = rd;
   assign reg_raddr_c_user = (state_q == ST_BLOCK_MEM) && block_user_bank_q;
 
   arm7tdmi_regfile u_regfile (
@@ -187,9 +193,11 @@ module arm7tdmi_core
     .raddr_b_i(rm),
     .raddr_c_i(raddr_c),
     .raddr_c_user_i(reg_raddr_c_user),
+    .raddr_d_i(raddr_d),
     .rdata_a_o(rn_data),
     .rdata_b_o(rm_data),
     .rdata_c_o(rs_data),
+    .rdata_d_o(rd_data),
     .we_i(reg_we),
     .waddr_i(reg_waddr),
     .wdata_i(reg_wdata),
@@ -251,8 +259,10 @@ module arm7tdmi_core
     hword_addr            = decoded.ls_up ? rn_data + hword_offset : rn_data - hword_offset;
     hword_transfer_addr   = decoded.ls_pre_index ? hword_addr : rn_data;
     mul_result            = (rm_data * rs_data) + (decoded.mul_accumulate ? rn_data : 32'h0000_0000);
-    mul64_result          = decoded.mul_long_signed ? 64'(signed'(rm_data) * signed'(rs_data)) :
+    mul64_product         = decoded.mul_long_signed ? 64'(signed'(rm_data) * signed'(rs_data)) :
                                                        64'(rm_data) * 64'(rs_data);
+    mul64_accumulator     = decoded.mul_accumulate ? {rn_data, rd_data} : 64'h0000_0000_0000_0000;
+    mul64_result          = mul64_product + mul64_accumulator;
     mul_flags             = flags;
     mul_flags.n           = (decoded.op_class == ARM_OP_LONG_MULTIPLY) ? mul64_result[63] : mul_result[31];
     mul_flags.z           = (decoded.op_class == ARM_OP_LONG_MULTIPLY) ? (mul64_result == 64'h0) :

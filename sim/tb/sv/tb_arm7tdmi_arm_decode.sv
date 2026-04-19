@@ -247,11 +247,25 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "UMULL decode mismatch");
     end
 
+    decode(32'hE0A7_6190); // UMLAL r6, r7, r0, r1
+    expect_class(ARM_OP_LONG_MULTIPLY, 1'b1);
+    if (decoded.rd !== 4'd6 || decoded.rn !== 4'd7 || decoded.rm !== 4'd0 ||
+        decoded.rs !== 4'd1 || decoded.mul_long_signed || !decoded.mul_accumulate) begin
+      $fatal(1, "UMLAL decode mismatch");
+    end
+
     decode(32'hE0CB_A998); // SMULL r10, r11, r8, r9
     expect_class(ARM_OP_LONG_MULTIPLY, 1'b1);
     if (decoded.rd !== 4'd10 || decoded.rn !== 4'd11 || decoded.rm !== 4'd8 ||
         decoded.rs !== 4'd9 || !decoded.mul_long_signed || decoded.mul_accumulate) begin
       $fatal(1, "SMULL decode mismatch");
+    end
+
+    decode(32'hE0EB_A998); // SMLAL r10, r11, r8, r9
+    expect_class(ARM_OP_LONG_MULTIPLY, 1'b1);
+    if (decoded.rd !== 4'd10 || decoded.rn !== 4'd11 || decoded.rm !== 4'd8 ||
+        decoded.rs !== 4'd9 || !decoded.mul_long_signed || !decoded.mul_accumulate) begin
+      $fatal(1, "SMLAL decode mismatch");
     end
 
     decode(32'hE100_2091); // SWP r2, r1, [r0]
