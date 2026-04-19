@@ -95,6 +95,34 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "SUB immediate decode mismatch");
     end
 
+    decode(16'h4008); // AND r0, r1
+    expect_op(THUMB_OP_ALU_REG);
+    if (decoded.alu_op !== THUMB_ALU_AND || decoded.rd !== 3'd0 ||
+        decoded.rs !== 3'd1 || decoded.rm !== 4'd1) begin
+      $fatal(1, "ALU register AND decode mismatch");
+    end
+
+    decode(16'h4091); // LSL r1, r2
+    expect_op(THUMB_OP_ALU_REG);
+    if (decoded.alu_op !== THUMB_ALU_LSL || decoded.rd !== 3'd1 ||
+        decoded.rs !== 3'd2 || decoded.rm !== 4'd2) begin
+      $fatal(1, "ALU register LSL decode mismatch");
+    end
+
+    decode(16'h4254); // NEG r4, r2
+    expect_op(THUMB_OP_ALU_REG);
+    if (decoded.alu_op !== THUMB_ALU_NEG || decoded.rd !== 3'd4 ||
+        decoded.rs !== 3'd2 || decoded.rm !== 4'd2) begin
+      $fatal(1, "ALU register NEG decode mismatch");
+    end
+
+    decode(16'h4355); // MUL r5, r2
+    expect_op(THUMB_OP_ALU_REG);
+    if (decoded.alu_op !== THUMB_ALU_MUL || decoded.rd !== 3'd5 ||
+        decoded.rs !== 3'd2 || decoded.rm !== 4'd2) begin
+      $fatal(1, "ALU register MUL decode mismatch");
+    end
+
     decode(16'h4700); // BX r0
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd0) begin

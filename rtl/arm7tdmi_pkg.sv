@@ -96,7 +96,7 @@ package arm7tdmi_pkg;
     ARM_OP_COPROCESSOR
   } arm_op_class_t;
 
-  typedef enum logic [3:0] {
+  typedef enum logic [4:0] {
     THUMB_OP_UNDEFINED,
     THUMB_OP_SHIFT_IMM,
     THUMB_OP_ADD_REG,
@@ -110,10 +110,30 @@ package arm7tdmi_pkg;
     THUMB_OP_HI_ADD,
     THUMB_OP_HI_CMP,
     THUMB_OP_HI_MOV,
+    THUMB_OP_ALU_REG,
     THUMB_OP_COND_BRANCH,
     THUMB_OP_BRANCH,
     THUMB_OP_BRANCH_EXCHANGE
   } thumb_op_class_t;
+
+  typedef enum logic [3:0] {
+    THUMB_ALU_AND = 4'h0,
+    THUMB_ALU_EOR = 4'h1,
+    THUMB_ALU_LSL = 4'h2,
+    THUMB_ALU_LSR = 4'h3,
+    THUMB_ALU_ASR = 4'h4,
+    THUMB_ALU_ADC = 4'h5,
+    THUMB_ALU_SBC = 4'h6,
+    THUMB_ALU_ROR = 4'h7,
+    THUMB_ALU_TST = 4'h8,
+    THUMB_ALU_NEG = 4'h9,
+    THUMB_ALU_CMP = 4'hA,
+    THUMB_ALU_CMN = 4'hB,
+    THUMB_ALU_ORR = 4'hC,
+    THUMB_ALU_MUL = 4'hD,
+    THUMB_ALU_BIC = 4'hE,
+    THUMB_ALU_MVN = 4'hF
+  } thumb_alu_op_t;
 
   typedef struct packed {
     arm_cond_t     cond;
@@ -158,6 +178,7 @@ package arm7tdmi_pkg;
     logic [2:0]      rn;
     logic [2:0]      rs;
     logic [3:0]      rm;
+    thumb_alu_op_t   alu_op;
     arm_shift_t      shift_type;
     logic [4:0]      shift_imm;
     logic [2:0]      imm3;

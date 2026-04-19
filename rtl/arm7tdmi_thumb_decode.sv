@@ -15,6 +15,7 @@ module arm7tdmi_thumb_decode
       rn:            instr_i[8:6],
       rs:            instr_i[5:3],
       rm:            {instr_i[6], instr_i[5:3]},
+      alu_op:        thumb_alu_op_t'(instr_i[9:6]),
       shift_type:    arm_shift_t'(instr_i[12:11]),
       shift_imm:     instr_i[10:6],
       imm3:          instr_i[8:6],
@@ -80,6 +81,12 @@ module arm7tdmi_thumb_decode
         decoded_o.op_class  = THUMB_OP_SUB_IMM;
         decoded_o.rd        = instr_i[10:8];
         decoded_o.rd4       = {1'b0, instr_i[10:8]};
+        decoded_o.supported = 1'b1;
+      end
+
+      16'b010000??????????: begin
+        decoded_o.op_class  = THUMB_OP_ALU_REG;
+        decoded_o.rm        = {1'b0, instr_i[5:3]};
         decoded_o.supported = 1'b1;
       end
 
