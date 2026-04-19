@@ -171,6 +171,18 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "immediate LDRH decode mismatch");
     end
 
+    decode(16'h9101); // STR r1, [SP, #4]
+    expect_op(THUMB_OP_LS_SP);
+    if (decoded.rd !== 3'd1 || decoded.imm8 !== 8'h01 || decoded.ls_load) begin
+      $fatal(1, "SP-relative STR decode mismatch");
+    end
+
+    decode(16'h9A02); // LDR r2, [SP, #8]
+    expect_op(THUMB_OP_LS_SP);
+    if (decoded.rd !== 3'd2 || decoded.imm8 !== 8'h02 || !decoded.ls_load) begin
+      $fatal(1, "SP-relative LDR decode mismatch");
+    end
+
     decode(16'h4700); // BX r0
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd0) begin

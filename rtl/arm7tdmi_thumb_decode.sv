@@ -158,6 +158,14 @@ module arm7tdmi_thumb_decode
         decoded_o.supported = 1'b1;
       end
 
+      16'b1001????????????: begin
+        decoded_o.op_class  = THUMB_OP_LS_SP;
+        decoded_o.rd        = instr_i[10:8];
+        decoded_o.rd4       = {1'b0, instr_i[10:8]};
+        decoded_o.ls_load   = instr_i[11];
+        decoded_o.supported = 1'b1;
+      end
+
       16'b01000100????????: begin
         decoded_o.op_class  = THUMB_OP_HI_ADD;
         decoded_o.rd4       = {instr_i[7], instr_i[2:0]};
