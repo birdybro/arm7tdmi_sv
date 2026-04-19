@@ -45,6 +45,32 @@ module tb_arm7tdmi_thumb_decode
       $fatal(1, "ASR immediate decode mismatch");
     end
 
+    decode(16'h1842); // ADD r2, r0, r1
+    expect_op(THUMB_OP_ADD_REG);
+    if (decoded.rd !== 3'd2 || decoded.rs !== 3'd0 ||
+        decoded.rn !== 3'd1 || decoded.rm !== 4'd1) begin
+      $fatal(1, "ADD register decode mismatch");
+    end
+
+    decode(16'h1A65); // SUB r5, r4, r1
+    expect_op(THUMB_OP_SUB_REG);
+    if (decoded.rd !== 3'd5 || decoded.rs !== 3'd4 ||
+        decoded.rn !== 3'd1 || decoded.rm !== 4'd1) begin
+      $fatal(1, "SUB register decode mismatch");
+    end
+
+    decode(16'h1DDC); // ADD r4, r3, #7
+    expect_op(THUMB_OP_ADD_IMM3);
+    if (decoded.rd !== 3'd4 || decoded.rs !== 3'd3 || decoded.imm3 !== 3'd7) begin
+      $fatal(1, "ADD 3-bit immediate decode mismatch");
+    end
+
+    decode(16'h1ED3); // SUB r3, r2, #3
+    expect_op(THUMB_OP_SUB_IMM3);
+    if (decoded.rd !== 3'd3 || decoded.rs !== 3'd2 || decoded.imm3 !== 3'd3) begin
+      $fatal(1, "SUB 3-bit immediate decode mismatch");
+    end
+
     decode(16'h212A); // MOV r1, #0x2a
     expect_op(THUMB_OP_MOV_IMM);
     if (decoded.rd !== 3'd1 || decoded.imm8 !== 8'h2A) begin
@@ -79,6 +105,35 @@ module tb_arm7tdmi_thumb_decode
     expect_op(THUMB_OP_BRANCH_EXCHANGE);
     if (decoded.rm !== 4'd8) begin
       $fatal(1, "BX high-register decode mismatch");
+    end
+
+    decode(16'h4488); // ADD r8, r1
+    expect_op(THUMB_OP_HI_ADD);
+    if (decoded.rd4 !== 4'd8 || decoded.rm !== 4'd1) begin
+      $fatal(1, "high-register ADD decode mismatch");
+    end
+
+    decode(16'h4590); // CMP r8, r2
+    expect_op(THUMB_OP_HI_CMP);
+    if (decoded.rd4 !== 4'd8 || decoded.rm !== 4'd2) begin
+      $fatal(1, "high-register CMP decode mismatch");
+    end
+
+    decode(16'h4643); // MOV r3, r8
+    expect_op(THUMB_OP_HI_MOV);
+    if (decoded.rd4 !== 4'd3 || decoded.rm !== 4'd8) begin
+      $fatal(1, "high-register MOV decode mismatch");
+    end
+
+    decode(16'hD001); // BEQ +2
+    expect_op(THUMB_OP_COND_BRANCH);
+    if (decoded.cond !== COND_EQ || decoded.branch_imm8 !== 8'h01) begin
+      $fatal(1, "conditional branch decode mismatch");
+    end
+
+    decode(16'hDE00);
+    if (decoded.supported) begin
+      $fatal(1, "undefined Thumb conditional branch decoded as supported");
     end
 
     decode(16'hE7FE); // B .

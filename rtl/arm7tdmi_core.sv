@@ -72,6 +72,8 @@ module arm7tdmi_core
   logic [3:0] rn;
   logic [3:0] rd;
   logic [3:0] rm;
+  logic [3:0] thumb_raddr_a;
+  logic [3:0] thumb_raddr_b;
   logic [3:0] raddr_c;
   logic [3:0] raddr_d;
   arm_decoded_t decoded;
@@ -84,6 +86,7 @@ module arm7tdmi_core
   logic [31:0] spsr;
   arm_flags_t flags;
   arm_mode_t  mode;
+  logic        unused_thumb_rd;
 
   logic       reg_we;
   logic [3:0] reg_waddr;
@@ -96,6 +99,7 @@ module arm7tdmi_core
   logic [31:0] spsr_wdata;
 
   logic       cond_pass;
+  logic       thumb_cond_pass;
   logic       execute_cond_pass;
   arm_alu_op_t alu_op;
   logic [31:0] alu_b;
@@ -124,6 +128,7 @@ module arm7tdmi_core
   logic [31:0] next_pc;
   logic [31:0] bx_cpsr;
   logic [31:0] thumb_imm32;
+  logic [31:0] thumb_op2;
   logic [31:0] thumb_alu_result;
   logic [32:0] thumb_add_wide;
   logic [32:0] thumb_sub_wide;
@@ -175,12 +180,13 @@ module arm7tdmi_core
   endfunction
 
   assign thumb_state = cpsr[5];
-  assign rn = thumb_state ? {1'b0, thumb_decoded.rd} : decoded.rn;
-  assign rd = thumb_state ? {1'b0, thumb_decoded.rd} : decoded.rd;
-  assign rm = thumb_state ? thumb_decoded.rm : decoded.rm;
+  assign rn = thumb_state ? thumb_raddr_a : decoded.rn;
+  assign rd = thumb_state ? thumb_decoded.rd4 : decoded.rd;
+  assign rm = thumb_state ? thumb_raddr_b : decoded.rm;
 
   assign flags = cpsr_flags(cpsr);
   assign mode  = arm_mode_t'(cpsr[4:0]);
+  assign unused_thumb_rd = ^thumb_decoded.rd;
   assign rs_shift_amount = rs_data[7:0];
   assign unused_rs_upper = ^rs_data[31:8];
   assign unused_ls_modes = decoded.ls_pre_index ^ decoded.ls_byte ^ decoded.ls_writeback;
@@ -250,6 +256,12 @@ module arm7tdmi_core
     .pass_o(cond_pass)
   );
 
+  arm7tdmi_cond u_thumb_cond (
+    .cond_i(thumb_decoded.cond),
+    .flags_i(flags),
+    .pass_o(thumb_cond_pass)
+  );
+
   arm7tdmi_shifter u_shifter (
     .value_i(rm_data),
     .shift_i(shift_type),
@@ -285,9 +297,12 @@ module arm7tdmi_core
     supported_execute     = thumb_state ? thumb_decoded.supported : decoded.supported;
     next_pc               = pc_q + 32'd4;
     bx_cpsr               = cpsr;
+    thumb_raddr_a         = thumb_decoded.rd4;
+    thumb_raddr_b         = thumb_decoded.rm;
     thumb_imm32           = {24'h0, thumb_decoded.imm8};
-    thumb_add_wide        = {1'b0, rn_data} + {1'b0, thumb_imm32};
-    thumb_sub_wide        = {1'b0, rn_data} - {1'b0, thumb_imm32};
+    thumb_op2             = thumb_imm32;
+    thumb_add_wide        = {1'b0, rn_data} + {1'b0, thumb_op2};
+    thumb_sub_wide        = {1'b0, rn_data} - {1'b0, thumb_op2};
     thumb_alu_result      = 32'h0000_0000;
     thumb_flags           = flags;
     thumb_next_pc         = pc_q + 32'd2;
@@ -317,6 +332,34 @@ module arm7tdmi_core
     psr_write_value = decoded.immediate_operand ? alu_b : rm_data;
 
     unique case (thumb_decoded.op_class)
+      THUMB_OP_ADD_REG, THUMB_OP_SUB_REG: begin
+        thumb_raddr_a  = {1'b0, thumb_decoded.rs};
+        thumb_raddr_b  = {1'b0, thumb_decoded.rn};
+        thumb_op2      = rm_data;
+        thumb_add_wide = {1'b0, rn_data} + {1'b0, thumb_op2};
+        thumb_sub_wide = {1'b0, rn_data} - {1'b0, thumb_op2};
+      end
+
+      THUMB_OP_ADD_IMM3, THUMB_OP_SUB_IMM3: begin
+        thumb_raddr_a  = {1'b0, thumb_decoded.rs};
+        thumb_op2      = {29'h0, thumb_decoded.imm3};
+        thumb_add_wide = {1'b0, rn_data} + {1'b0, thumb_op2};
+        thumb_sub_wide = {1'b0, rn_data} - {1'b0, thumb_op2};
+      end
+
+      THUMB_OP_HI_ADD, THUMB_OP_HI_CMP, THUMB_OP_HI_MOV: begin
+        thumb_raddr_a  = thumb_decoded.rd4;
+        thumb_raddr_b  = thumb_decoded.rm;
+        thumb_op2      = rm_data;
+        thumb_add_wide = {1'b0, rn_data} + {1'b0, thumb_op2};
+        thumb_sub_wide = {1'b0, rn_data} - {1'b0, thumb_op2};
+      end
+
+      default: begin
+      end
+    endcase
+
+    unique case (thumb_decoded.op_class)
       THUMB_OP_MOV_IMM: begin
         thumb_alu_result = thumb_imm32;
         thumb_flags.n    = thumb_imm32[31];
@@ -330,27 +373,39 @@ module arm7tdmi_core
         thumb_flags.c    = shifted_rm_carry;
       end
 
-      THUMB_OP_CMP_IMM, THUMB_OP_SUB_IMM: begin
+      THUMB_OP_CMP_IMM, THUMB_OP_SUB_IMM,
+      THUMB_OP_SUB_REG, THUMB_OP_SUB_IMM3, THUMB_OP_HI_CMP: begin
         thumb_alu_result = thumb_sub_wide[31:0];
         thumb_flags.n    = thumb_sub_wide[31];
         thumb_flags.z    = thumb_sub_wide[31:0] == 32'h0000_0000;
         thumb_flags.c    = !thumb_sub_wide[32];
-        thumb_flags.v    = (rn_data[31] != thumb_imm32[31]) &&
+        thumb_flags.v    = (rn_data[31] != thumb_op2[31]) &&
                            (thumb_sub_wide[31] != rn_data[31]);
       end
 
-      THUMB_OP_ADD_IMM: begin
+      THUMB_OP_ADD_IMM, THUMB_OP_ADD_REG, THUMB_OP_ADD_IMM3, THUMB_OP_HI_ADD: begin
         thumb_alu_result = thumb_add_wide[31:0];
         thumb_flags.n    = thumb_add_wide[31];
         thumb_flags.z    = thumb_add_wide[31:0] == 32'h0000_0000;
         thumb_flags.c    = thumb_add_wide[32];
-        thumb_flags.v    = (rn_data[31] == thumb_imm32[31]) &&
+        thumb_flags.v    = (rn_data[31] == thumb_op2[31]) &&
                            (thumb_add_wide[31] != rn_data[31]);
+      end
+
+      THUMB_OP_HI_MOV: begin
+        thumb_alu_result = rm_data;
       end
 
       THUMB_OP_BRANCH: begin
         thumb_next_pc = pc_q + 32'd4 + {{20{thumb_decoded.branch_imm11[10]}},
                                         thumb_decoded.branch_imm11, 1'b0};
+      end
+
+      THUMB_OP_COND_BRANCH: begin
+        thumb_next_pc = thumb_cond_pass ?
+                        (pc_q + 32'd4 + {{23{thumb_decoded.branch_imm8[7]}},
+                                          thumb_decoded.branch_imm8, 1'b0}) :
+                        (pc_q + 32'd2);
       end
 
       THUMB_OP_BRANCH_EXCHANGE: begin
@@ -484,7 +539,8 @@ module arm7tdmi_core
             retired_o <= thumb_decoded.supported;
 
             unique case (thumb_decoded.op_class)
-              THUMB_OP_SHIFT_IMM, THUMB_OP_MOV_IMM, THUMB_OP_ADD_IMM, THUMB_OP_SUB_IMM: begin
+              THUMB_OP_SHIFT_IMM, THUMB_OP_MOV_IMM, THUMB_OP_ADD_IMM, THUMB_OP_SUB_IMM,
+              THUMB_OP_ADD_REG, THUMB_OP_SUB_REG, THUMB_OP_ADD_IMM3, THUMB_OP_SUB_IMM3: begin
                 reg_we    <= 1'b1;
                 reg_waddr <= rd;
                 reg_wdata <= thumb_alu_result;
@@ -494,7 +550,27 @@ module arm7tdmi_core
                 next_fetch_seq_q <= 1'b1;
               end
 
+              THUMB_OP_HI_ADD, THUMB_OP_HI_MOV: begin
+                if (rd == 4'd15) begin
+                  pc_q <= thumb_alu_result & (thumb_state ? 32'hFFFF_FFFE : 32'hFFFF_FFFC);
+                  next_fetch_seq_q <= 1'b0;
+                end else begin
+                  reg_we    <= 1'b1;
+                  reg_waddr <= rd;
+                  reg_wdata <= thumb_alu_result;
+                  pc_q      <= pc_q + 32'd2;
+                  next_fetch_seq_q <= 1'b1;
+                end
+              end
+
               THUMB_OP_CMP_IMM: begin
+                cpsr_we    <= 1'b1;
+                cpsr_wdata <= cpsr_with_flags(cpsr, thumb_flags);
+                pc_q       <= pc_q + 32'd2;
+                next_fetch_seq_q <= 1'b1;
+              end
+
+              THUMB_OP_HI_CMP: begin
                 cpsr_we    <= 1'b1;
                 cpsr_wdata <= cpsr_with_flags(cpsr, thumb_flags);
                 pc_q       <= pc_q + 32'd2;
@@ -504,6 +580,11 @@ module arm7tdmi_core
               THUMB_OP_BRANCH: begin
                 pc_q <= thumb_next_pc;
                 next_fetch_seq_q <= 1'b0;
+              end
+
+              THUMB_OP_COND_BRANCH: begin
+                pc_q <= thumb_next_pc;
+                next_fetch_seq_q <= !thumb_cond_pass;
               end
 
               THUMB_OP_BRANCH_EXCHANGE: begin
