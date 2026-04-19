@@ -33,6 +33,13 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "MOV immediate decode mismatch");
     end
 
+    decode(32'hE3A0_0090); // MOV r0, #0x90
+    expect_class(ARM_OP_DATA_PROCESSING, 1'b1);
+    if (decoded.alu_op !== ALU_MOV || !decoded.immediate_operand ||
+        decoded.rd !== 4'd0 || decoded.imm8 !== 8'h90) begin
+      $fatal(1, "MOV immediate 0x90 decode mismatch");
+    end
+
     decode(32'hE350_0000); // CMP r0, #0
     expect_class(ARM_OP_DATA_PROCESSING, 1'b1);
     if (decoded.alu_op !== ALU_CMP || !decoded.set_flags ||
@@ -127,6 +134,23 @@ module tb_arm7tdmi_arm_decode
     if (decoded.rn !== 4'd0 || !decoded.ls_load || decoded.block_reglist !== 16'h0070) begin
       $fatal(1, "LDMIA decode mismatch");
     end
+
+    decode(32'hE890_8000); // LDMIA r0, {pc}
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd0 || !decoded.ls_load || decoded.ls_writeback ||
+        decoded.psr_use_spsr || decoded.block_reglist !== 16'h8000) begin
+      $fatal(1, "LDMIA pc decode mismatch");
+    end
+
+    decode(32'hE8D0_8000); // LDMIA r0, {pc}^
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd0 || !decoded.ls_load || !decoded.psr_use_spsr ||
+        decoded.block_reglist !== 16'h8000) begin
+      $fatal(1, "LDMIA pc restore decode mismatch");
+    end
+
+    decode(32'hE8B0_8000); // LDMIA r0!, {pc}
+    expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b0);
 
     decode(32'hE8A0_000E); // STMIA r0!, {r1-r3}
     expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);

@@ -94,7 +94,7 @@ module arm7tdmi_arm_decode
             decoded_o.supported = (instr_i[19:16] == 4'hF) &&
                                   (instr_i[11:0] == 12'h000) && (instr_i[15:12] != 4'd15);
           end
-        end else if (!(instr_i[7:4] == 4'b1001)) begin
+        end else if (instr_i[25] || !(instr_i[7:4] == 4'b1001)) begin
           decoded_o.op_class = ARM_OP_DATA_PROCESSING;
           decoded_o.supported = 1'b1;
         end
@@ -109,9 +109,11 @@ module arm7tdmi_arm_decode
 
       3'b100: begin
         decoded_o.op_class = ARM_OP_BLOCK_DATA_TRANSFER;
-        decoded_o.supported = !instr_i[22] && (instr_i[19:16] != 4'd15) &&
+        decoded_o.supported = (instr_i[19:16] != 4'd15) &&
                               (instr_i[15:0] != 16'h0000) &&
-                              !instr_i[15] && (!instr_i[21] || !instr_i[{1'b0, instr_i[19:16]}]);
+                              (!instr_i[22] || (instr_i[20] && instr_i[15])) &&
+                              (!instr_i[15] || (instr_i[20] && !instr_i[21])) &&
+                              (!instr_i[21] || !instr_i[{1'b0, instr_i[19:16]}]);
       end
 
       3'b101: begin

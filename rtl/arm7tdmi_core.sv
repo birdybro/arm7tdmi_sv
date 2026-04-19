@@ -60,6 +60,7 @@ module arm7tdmi_core
   logic [3:0]  block_reg_q;
   logic        block_load_q;
   logic        block_wb_q;
+  logic        block_restore_cpsr_q;
   logic [3:0]  block_rn_q;
   logic [31:0] block_wbdata_q;
   logic [31:0] exception_lr_q;
@@ -298,6 +299,7 @@ module arm7tdmi_core
       block_reg_q      <= 4'h0;
       block_load_q     <= 1'b0;
       block_wb_q       <= 1'b0;
+      block_restore_cpsr_q <= 1'b0;
       block_rn_q       <= 4'h0;
       block_wbdata_q   <= 32'h0000_0000;
       exception_lr_q   <= 32'h0000_0000;
@@ -492,6 +494,7 @@ module arm7tdmi_core
             block_reg_q <= first_reg_in_list(decoded.block_reglist);
             block_load_q <= decoded.ls_load;
             block_wb_q <= decoded.ls_writeback;
+            block_restore_cpsr_q <= decoded.psr_use_spsr && decoded.ls_load && decoded.block_reglist[15];
             block_rn_q <= rn;
             block_wbdata_q <= decoded.ls_up ? (rn_data + block_byte_count) :
                                                 (rn_data - block_byte_count);
@@ -581,13 +584,25 @@ module arm7tdmi_core
         ST_BLOCK_MEM: begin
           if (bus_ready_i) begin
             if (block_load_q) begin
-              reg_we    <= 1'b1;
-              reg_waddr <= block_reg_q;
-              reg_wdata <= bus_rdata_i;
+              if (block_reg_q == 4'd15) begin
+                pc_q <= bus_rdata_i & 32'hFFFF_FFFC;
+                next_fetch_seq_q <= 1'b0;
+                if (block_restore_cpsr_q) begin
+                  cpsr_we    <= 1'b1;
+                  cpsr_wdata <= spsr;
+                end
+              end else begin
+                reg_we    <= 1'b1;
+                reg_waddr <= block_reg_q;
+                reg_wdata <= bus_rdata_i;
+              end
             end
 
             if (block_last_reg) begin
-              if (block_wb_q) begin
+              if (block_load_q && block_reg_q == 4'd15) begin
+                retired_o <= 1'b1;
+                state_q <= ST_FETCH;
+              end else if (block_wb_q) begin
                 state_q <= ST_BLOCK_WB;
               end else begin
                 retired_o <= 1'b1;
@@ -655,9 +670,7 @@ module arm7tdmi_core
     end
   end
 
-  // Interrupt inputs are intentionally part of the public interface from day one.
-  // IRQ/FIQ sampling is added after the shared exception-entry path is broader.
-  logic unused_interrupts;
-  assign unused_interrupts = irq_i ^ fiq_i ^ alu_arithmetic ^ ^spsr ^ unused_rs_upper ^
-                             unused_ls_modes ^ unused_hword_modes ^ unused_psr_modes;
+  logic unused_internal_terms;
+  assign unused_internal_terms = alu_arithmetic ^ unused_rs_upper ^ unused_ls_modes ^
+                                 unused_hword_modes ^ unused_psr_modes;
 endmodule
