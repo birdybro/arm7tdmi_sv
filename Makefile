@@ -11,12 +11,12 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 	rtl/arm7tdmi_regfile.sv \
 	rtl/arm7tdmi_core.sv
 
-.PHONY: lint test tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-mem tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-block tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-swap-abort tb-core-block-abort tb-core-exception-return clean
+.PHONY: lint test tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-mem tb-core-mem-ttrans tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-block tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-swap-abort tb-core-block-abort tb-core-exception-return clean
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
 
-test: lint tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-mem tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-block tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-swap-abort tb-core-block-abort tb-core-exception-return
+test: lint tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-mem tb-core-mem-ttrans tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-block tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-swap-abort tb-core-block-abort tb-core-exception-return
 
 tb-cond:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_cond $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_cond.sv
@@ -125,6 +125,10 @@ tb-core-thumb-unsupported:
 tb-core-mem:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_mem
+
+tb-core-mem-ttrans:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem_ttrans $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem_ttrans.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_mem_ttrans
 
 tb-core-mem-regoffset:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem_regoffset $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem_regoffset.sv

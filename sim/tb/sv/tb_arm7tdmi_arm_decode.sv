@@ -136,6 +136,22 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "LDR post-index immediate decode mismatch");
     end
 
+    decode(32'hE4A0_1004); // STRT r1, [r0], #4
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.ls_pre_index || !decoded.ls_up || !decoded.ls_writeback ||
+        decoded.ls_load || decoded.rn !== 4'd0 || decoded.rd !== 4'd1 ||
+        decoded.ls_offset12 !== 12'h004) begin
+      $fatal(1, "STRT post-index immediate decode mismatch");
+    end
+
+    decode(32'hE4B0_2004); // LDRT r2, [r0], #4
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.ls_pre_index || !decoded.ls_up || !decoded.ls_writeback ||
+        !decoded.ls_load || decoded.rn !== 4'd0 || decoded.rd !== 4'd2 ||
+        decoded.ls_offset12 !== 12'h004) begin
+      $fatal(1, "LDRT post-index immediate decode mismatch");
+    end
+
     decode(32'hE880_000E); // STMIA r0, {r1-r3}
     expect_class(ARM_OP_BLOCK_DATA_TRANSFER, 1'b1);
     if (decoded.rn !== 4'd0 || decoded.ls_load || decoded.block_reglist !== 16'h000E) begin
