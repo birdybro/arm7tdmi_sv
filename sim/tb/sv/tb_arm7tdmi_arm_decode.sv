@@ -99,6 +99,13 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "LDR pc literal decode mismatch");
     end
 
+    decode(32'hE58F_1034); // STR r1, [pc, #0x34]
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd15 || decoded.rd !== 4'd1 || decoded.ls_load ||
+        decoded.ls_writeback || !decoded.ls_pre_index || decoded.ls_offset12 !== 12'h034) begin
+      $fatal(1, "STR pc-relative decode mismatch");
+    end
+
     decode(32'hE5DF_F010); // LDRB pc, [pc, #0x10]
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b0);
 

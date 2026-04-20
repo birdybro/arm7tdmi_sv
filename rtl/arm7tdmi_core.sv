@@ -245,7 +245,8 @@ module arm7tdmi_core
   assign block_pc_load_addr = block_thumb_q ? (bus_rdata_i & 32'hFFFF_FFFE) :
                                               (bus_rdata_i & 32'hFFFF_FFFC);
   assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
-                   ((decoded.register_shift || (decoded.op_class == ARM_OP_MULTIPLY) ||
+                   ((((decoded.op_class == ARM_OP_DATA_PROCESSING) && decoded.register_shift) ||
+                     (decoded.op_class == ARM_OP_MULTIPLY) ||
                      (decoded.op_class == ARM_OP_LONG_MULTIPLY)) ? decoded.rs : rd);
   assign raddr_d = rd;
   assign reg_raddr_c_user = (state_q == ST_BLOCK_MEM) && block_user_bank_q;

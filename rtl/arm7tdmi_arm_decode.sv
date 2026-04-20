@@ -107,8 +107,7 @@ module arm7tdmi_arm_decode
         decoded_o.op_class = ARM_OP_SINGLE_DATA_TRANSFER;
         decoded_o.supported = (!instr_i[25] || !instr_i[4]) &&
                               (!instr_i[21] || (instr_i[19:16] != instr_i[15:12])) &&
-                              ((instr_i[19:16] != 4'd15) ||
-                               (instr_i[20] && instr_i[24] && !instr_i[21])) &&
+                              ((instr_i[19:16] != 4'd15) || (instr_i[24] && !instr_i[21])) &&
                               ((instr_i[15:12] != 4'd15) ||
                                (instr_i[20] && !instr_i[22] && instr_i[24] && !instr_i[21]));
       end
