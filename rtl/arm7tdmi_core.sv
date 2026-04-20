@@ -253,6 +253,7 @@ module arm7tdmi_core
     .clk_i,
     .rst_ni,
     .mode_i(mode),
+    .thumb_i(thumb_state),
     .pc_exec_i(pc_q),
     .raddr_a_i(rn),
     .raddr_b_i(rm),

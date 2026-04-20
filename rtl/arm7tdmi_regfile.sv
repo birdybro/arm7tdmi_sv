@@ -7,6 +7,7 @@ module arm7tdmi_regfile
   input  logic       rst_ni,
 
   input  arm_mode_t  mode_i,
+  input  logic       thumb_i,
   input  logic [31:0] pc_exec_i,
 
   input  logic [3:0] raddr_a_i,
@@ -57,7 +58,7 @@ module arm7tdmi_regfile
 
   function automatic logic [31:0] read_reg(input arm_mode_t mode, input logic [3:0] addr);
     if (addr == 4'd15) begin
-      read_reg = pc_exec_i + 32'd8;
+      read_reg = thumb_i ? (pc_exec_i + 32'd4) : (pc_exec_i + 32'd8);
     end else if (fiq_bank(mode, addr)) begin
       read_reg = r_fiq[addr];
     end else if (mode_r13_r14_bank(mode, addr)) begin

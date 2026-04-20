@@ -6,6 +6,7 @@ module tb_arm7tdmi_regfile
   logic clk;
   logic rst_n;
   arm_mode_t mode;
+  logic thumb;
   logic [31:0] pc_exec;
   logic [3:0] raddr_a;
   logic [3:0] raddr_b;
@@ -31,6 +32,7 @@ module tb_arm7tdmi_regfile
     .clk_i(clk),
     .rst_ni(rst_n),
     .mode_i(mode),
+    .thumb_i(thumb),
     .pc_exec_i(pc_exec),
     .raddr_a_i(raddr_a),
     .raddr_b_i(raddr_b),
@@ -135,6 +137,7 @@ module tb_arm7tdmi_regfile
   initial begin
     rst_n = 1'b0;
     mode = MODE_SVC;
+    thumb = 1'b0;
     pc_exec = 32'h0800_0000;
     raddr_a = 4'h0;
     raddr_b = 4'h0;
@@ -186,6 +189,9 @@ module tb_arm7tdmi_regfile
     spsr_expect(MODE_USR, 32'h0000_0000);
 
     read_expect(MODE_SVC, 4'd15, 32'h0800_0008);
+    thumb = 1'b1;
+    read_expect(MODE_SVC, 4'd15, 32'h0800_0004);
+    thumb = 1'b0;
 
     cpsr_wdata = 32'hF000_001F;
     cpsr_we = 1'b1;

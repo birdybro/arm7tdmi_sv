@@ -25,6 +25,7 @@ module tb_arm7tdmi_core_thumb_hireg
   int add_hi_seen;
   int cmp_hi_seen;
   int mov_low_seen;
+  int mov_pc_seen;
   int loop_seen;
 
   arm7tdmi_core dut (
@@ -63,7 +64,8 @@ module tb_arm7tdmi_core_thumb_hireg
       32'h0000_0022: bus_rdata = 32'h0000_4488; // Thumb ADD r8, r1
       32'h0000_0024: bus_rdata = 32'h0000_4590; // Thumb CMP r8, r2
       32'h0000_0026: bus_rdata = 32'h0000_4643; // Thumb MOV r3, r8
-      32'h0000_0028: bus_rdata = 32'h0000_E7FE; // Thumb B .
+      32'h0000_0028: bus_rdata = 32'h0000_467C; // Thumb MOV r4, pc
+      32'h0000_002A: bus_rdata = 32'h0000_E7FE; // Thumb B .
       default:       bus_rdata = 32'hE1A0_0000;
     endcase
   end
@@ -93,6 +95,7 @@ module tb_arm7tdmi_core_thumb_hireg
     add_hi_seen = 0;
     cmp_hi_seen = 0;
     mov_low_seen = 0;
+    mov_pc_seen = 0;
     loop_seen = 0;
 
     repeat (2) @(posedge clk);
@@ -119,14 +122,19 @@ module tb_arm7tdmi_core_thumb_hireg
         mov_low_seen++;
       end
 
-      if (retired && debug_pc == 32'h0000_0028 && debug_cpsr[5] && debug_cpsr[30]) begin
+      if (debug_reg_we && debug_reg_waddr == 4'd4 && debug_reg_wdata == 32'h0000_002C) begin
+        mov_pc_seen++;
+      end
+
+      if (retired && debug_pc == 32'h0000_002A && debug_cpsr[5] && debug_cpsr[30]) begin
         loop_seen++;
       end
     end
 
-    if (mov_hi_seen != 1 || add_hi_seen != 1 || cmp_hi_seen != 1 || mov_low_seen != 1) begin
-      $fatal(1, "expected high-register MOV/ADD/CMP/MOV once, saw mov_hi=%0d add_hi=%0d cmp=%0d mov_low=%0d",
-             mov_hi_seen, add_hi_seen, cmp_hi_seen, mov_low_seen);
+    if (mov_hi_seen != 1 || add_hi_seen != 1 || cmp_hi_seen != 1 ||
+        mov_low_seen != 1 || mov_pc_seen != 1) begin
+      $fatal(1, "expected high-register MOV/ADD/CMP/MOV/MOV pc once, saw mov_hi=%0d add_hi=%0d cmp=%0d mov_low=%0d mov_pc=%0d",
+             mov_hi_seen, add_hi_seen, cmp_hi_seen, mov_low_seen, mov_pc_seen);
     end
 
     if (loop_seen < 2) begin
