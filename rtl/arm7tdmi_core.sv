@@ -1169,7 +1169,21 @@ module arm7tdmi_core
 
         ST_MEM: begin
           if (bus_ready_i) begin
-            if (mem_swap_q) begin
+            if (bus_abort_i) begin
+              if (mem_wb_q && !mem_swap_q) begin
+                reg_we    <= 1'b1;
+                reg_waddr <= mem_rn_q;
+                reg_wdata <= mem_wbdata_q;
+              end
+
+              exception_lr_q   <= pc_q + (mem_thumb_q ? 32'd4 : 32'd8);
+              exception_spsr_q <= cpsr;
+              cpsr_we          <= 1'b1;
+              cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_ABT};
+              pc_q             <= 32'h0000_0010;
+              next_fetch_seq_q <= 1'b0;
+              state_q          <= ST_EXCEPTION_SAVE;
+            end else if (mem_swap_q) begin
               mem_wbdata_q <= mem_byte_q ? {24'h0, bus_rdata_i[7:0]} : bus_rdata_i;
               mem_write_q  <= 1'b1;
               mem_load_q   <= 1'b0;

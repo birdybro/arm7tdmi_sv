@@ -57,6 +57,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-undefined`
 - `make tb-core-interrupt`
 - `make tb-core-prefetch-abort`
+- `make tb-core-data-abort`
 - `make tb-core-exception-return`
 - `make test`
 
@@ -85,6 +86,7 @@ The repository Makefile provides the current regression surface:
 - ARM undefined-instruction exception entry to the UND vector for undefined and coprocessor instruction classes.
 - ARM IRQ and FIQ exception entry, with mask-bit checks and FIQ priority over IRQ.
 - ARM prefetch-abort exception entry from the bus abort signal.
+- ARM data-abort exception entry from the bus abort signal for data-memory transactions.
 - Data-processing exception return through `Rd == r15` and `S == 1`, restoring CPSR from SPSR.
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.
@@ -93,7 +95,7 @@ The repository Makefile provides the current regression surface:
 
 - Most Thumb decode and execution groups.
 - Remaining block transfer edge cases and load/store edge cases.
-- Remaining data-abort exception behavior.
+- Remaining abort edge cases for swap and block transfers.
 - JTAG/EmbeddedICE/debug behavior.
 - Cycle-accurate instruction timing.
 - GBA-specific wait-state and prefetch behavior.
