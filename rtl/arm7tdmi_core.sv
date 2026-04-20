@@ -14,6 +14,7 @@ module arm7tdmi_core
   output logic [31:0]    bus_wdata_o,
   input  logic [31:0]    bus_rdata_i,
   input  logic           bus_ready_i,
+  input  logic           bus_abort_i = 1'b0,
 
   input  logic           irq_i,
   input  logic           fiq_i,
@@ -729,8 +730,18 @@ module arm7tdmi_core
             next_fetch_seq_q <= 1'b0;
             state_q          <= ST_EXCEPTION_SAVE;
           end else if (bus_ready_i) begin
-            instr_q <= thumb_state ? {16'h0000, bus_rdata_i[15:0]} : bus_rdata_i;
-            state_q <= ST_EXECUTE;
+            if (bus_abort_i) begin
+              exception_lr_q   <= pc_q + 32'd4;
+              exception_spsr_q <= cpsr;
+              cpsr_we          <= 1'b1;
+              cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_ABT};
+              pc_q             <= 32'h0000_000C;
+              next_fetch_seq_q <= 1'b0;
+              state_q          <= ST_EXCEPTION_SAVE;
+            end else begin
+              instr_q <= thumb_state ? {16'h0000, bus_rdata_i[15:0]} : bus_rdata_i;
+              state_q <= ST_EXECUTE;
+            end
           end
         end
 
