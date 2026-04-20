@@ -1231,7 +1231,17 @@ module arm7tdmi_core
 
         ST_SWAP_WRITE: begin
           if (bus_ready_i) begin
-            state_q <= ST_SWAP_WB;
+            if (bus_abort_i) begin
+              exception_lr_q   <= pc_q + 32'd8;
+              exception_spsr_q <= cpsr;
+              cpsr_we          <= 1'b1;
+              cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_ABT};
+              pc_q             <= 32'h0000_0010;
+              next_fetch_seq_q <= 1'b0;
+              state_q          <= ST_EXCEPTION_SAVE;
+            end else begin
+              state_q <= ST_SWAP_WB;
+            end
           end
         end
 
@@ -1248,7 +1258,15 @@ module arm7tdmi_core
 
         ST_BLOCK_MEM: begin
           if (bus_ready_i) begin
-            if (block_load_q) begin
+            if (bus_abort_i) begin
+              exception_lr_q   <= pc_q + (block_thumb_q ? 32'd4 : 32'd8);
+              exception_spsr_q <= cpsr;
+              cpsr_we          <= 1'b1;
+              cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_ABT};
+              pc_q             <= 32'h0000_0010;
+              next_fetch_seq_q <= 1'b0;
+              state_q          <= ST_EXCEPTION_SAVE;
+            end else if (block_load_q) begin
               if (block_reg_q == 4'd15) begin
                 block_pc_wdata_q <= block_pc_load_addr;
                 if (block_restore_cpsr_q) begin
