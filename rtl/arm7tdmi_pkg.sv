@@ -80,6 +80,12 @@ package arm7tdmi_pkg;
     BUS_CYCLE_COPROC = 2'b11
   } arm_bus_cycle_t;
 
+  typedef enum logic [1:0] {
+    TIMING_FUNCTIONAL    = 2'b00,
+    TIMING_ARM7TDMI_CYCLE = 2'b01,
+    TIMING_GBA_COMPAT    = 2'b10
+  } arm_timing_mode_t;
+
   typedef enum logic [3:0] {
     ARM_OP_UNDEFINED,
     ARM_OP_DATA_PROCESSING,

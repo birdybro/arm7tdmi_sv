@@ -106,6 +106,38 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "STR pc-relative decode mismatch");
     end
 
+    decode(32'hE5CF_1034); // STRB r1, [pc, #0x34]
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd15 || decoded.rd !== 4'd1 || decoded.ls_load ||
+        !decoded.ls_byte || decoded.ls_writeback || !decoded.ls_pre_index ||
+        !decoded.ls_up || decoded.ls_offset12 !== 12'h034) begin
+      $fatal(1, "STRB pc-relative decode mismatch");
+    end
+
+    decode(32'hE5DF_2030); // LDRB r2, [pc, #0x30]
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd15 || decoded.rd !== 4'd2 || !decoded.ls_load ||
+        !decoded.ls_byte || decoded.ls_writeback || !decoded.ls_pre_index ||
+        !decoded.ls_up || decoded.ls_offset12 !== 12'h030) begin
+      $fatal(1, "LDRB pc-relative decode mismatch");
+    end
+
+    decode(32'hE51F_2004); // LDR r2, [pc, #-4]
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd15 || decoded.rd !== 4'd2 || !decoded.ls_load ||
+        decoded.ls_byte || decoded.ls_writeback || !decoded.ls_pre_index ||
+        decoded.ls_up || decoded.ls_offset12 !== 12'h004) begin
+      $fatal(1, "LDR negative pc-relative decode mismatch");
+    end
+
+    decode(32'hE54F_1008); // STRB r1, [pc, #-8]
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.rn !== 4'd15 || decoded.rd !== 4'd1 || decoded.ls_load ||
+        !decoded.ls_byte || decoded.ls_writeback || !decoded.ls_pre_index ||
+        decoded.ls_up || decoded.ls_offset12 !== 12'h008) begin
+      $fatal(1, "STRB negative pc-relative decode mismatch");
+    end
+
     decode(32'hE5DF_F010); // LDRB pc, [pc, #0x10]
     expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b0);
 
@@ -157,6 +189,22 @@ module tb_arm7tdmi_arm_decode
         !decoded.ls_load || decoded.rn !== 4'd0 || decoded.rd !== 4'd2 ||
         decoded.ls_offset12 !== 12'h004) begin
       $fatal(1, "LDRT post-index immediate decode mismatch");
+    end
+
+    decode(32'hE4E0_1001); // STRBT r1, [r0], #1
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.ls_pre_index || !decoded.ls_up || !decoded.ls_writeback ||
+        decoded.ls_load || !decoded.ls_byte || decoded.rn !== 4'd0 ||
+        decoded.rd !== 4'd1 || decoded.ls_offset12 !== 12'h001) begin
+      $fatal(1, "STRBT post-index immediate decode mismatch");
+    end
+
+    decode(32'hE4F0_3001); // LDRBT r3, [r0], #1
+    expect_class(ARM_OP_SINGLE_DATA_TRANSFER, 1'b1);
+    if (decoded.ls_pre_index || !decoded.ls_up || !decoded.ls_writeback ||
+        !decoded.ls_load || !decoded.ls_byte || decoded.rn !== 4'd0 ||
+        decoded.rd !== 4'd3 || decoded.ls_offset12 !== 12'h001) begin
+      $fatal(1, "LDRBT post-index immediate decode mismatch");
     end
 
     decode(32'hE880_000E); // STMIA r0, {r1-r3}

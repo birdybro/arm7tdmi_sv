@@ -2,7 +2,9 @@
 
 module arm7tdmi_core
   import arm7tdmi_pkg::*;
-(
+#(
+  parameter arm_timing_mode_t TIMING_MODE = TIMING_FUNCTIONAL
+) (
   input  logic           clk_i,
   input  logic           rst_ni,
 
@@ -33,6 +35,7 @@ module arm7tdmi_core
     ST_EXECUTE,
     ST_MEM,
     ST_MEM_WB,
+    ST_TIMING,
     ST_MUL64_HI,
     ST_SWAP_WRITE,
     ST_SWAP_WB,
@@ -46,6 +49,9 @@ module arm7tdmi_core
   logic [31:0] pc_q;
   logic [31:0] instr_q;
   logic        next_fetch_seq_q;
+  logic [2:0]  timing_cycles_q;
+  logic        timing_retire_q;
+  state_t      timing_resume_state_q;
   logic [31:0] mem_addr_q;
   logic        mem_write_q;
   logic        mem_load_q;
@@ -69,6 +75,7 @@ module arm7tdmi_core
   logic [3:0]  block_rn_q;
   logic [31:0] block_wbdata_q;
   logic [31:0] block_pc_wdata_q;
+  logic        block_first_q;
   logic [31:0] exception_lr_q;
   logic [31:0] exception_spsr_q;
   logic [3:0]  mul64_hi_waddr_q;
@@ -178,6 +185,11 @@ module arm7tdmi_core
   logic [4:0]  thumb_stack_reg_count;
   logic [31:0] thumb_stack_byte_count;
   logic [31:0] block_pc_load_addr;
+  logic        timing_model_en;
+  logic        timing_internal_state;
+  logic [2:0]  arm_dp_extra_cycles;
+  logic [2:0]  arm_mul_extra_cycles;
+  logic [2:0]  thumb_exec_extra_cycles;
 
   function automatic logic [3:0] first_reg_in_list(input logic [15:0] reglist);
     first_reg_in_list = 4'd0;
@@ -206,7 +218,22 @@ module arm7tdmi_core
     endcase
   endfunction
 
+  /* verilator lint_off UNUSEDSIGNAL */
+  function automatic logic [2:0] multiply_internal_cycles(input logic [31:0] operand);
+    if ((operand[31:8] == 24'h000000) || (operand[31:8] == 24'hFFFFFF)) begin
+      multiply_internal_cycles = 3'd1;
+    end else if ((operand[31:16] == 16'h0000) || (operand[31:16] == 16'hFFFF)) begin
+      multiply_internal_cycles = 3'd2;
+    end else if ((operand[31:24] == 8'h00) || (operand[31:24] == 8'hFF)) begin
+      multiply_internal_cycles = 3'd3;
+    end else begin
+      multiply_internal_cycles = 3'd4;
+    end
+  endfunction
+  /* verilator lint_on UNUSEDSIGNAL */
+
   assign thumb_state = cpsr[5];
+  assign timing_model_en = (TIMING_MODE != TIMING_FUNCTIONAL);
   assign rn = thumb_state ? thumb_raddr_a : decoded.rn;
   assign rd = thumb_state ? thumb_waddr : decoded.rd;
   assign rm = thumb_state ? thumb_raddr_b : decoded.rm;
@@ -244,6 +271,23 @@ module arm7tdmi_core
   assign thumb_stack_byte_count = {25'h0, thumb_stack_reg_count, 2'b00};
   assign block_pc_load_addr = block_thumb_q ? (bus_rdata_i & 32'hFFFF_FFFE) :
                                               (bus_rdata_i & 32'hFFFF_FFFC);
+  assign timing_internal_state = timing_model_en &&
+                                 ((state_q == ST_EXECUTE) || (state_q == ST_MEM_WB) ||
+                                  (state_q == ST_TIMING) || (state_q == ST_MUL64_HI) ||
+                                  (state_q == ST_SWAP_WB) || (state_q == ST_BLOCK_WB) ||
+                                  (state_q == ST_BLOCK_PC_WB) || (state_q == ST_EXCEPTION_SAVE));
+  assign arm_dp_extra_cycles = (timing_model_en &&
+                                (decoded.op_class == ARM_OP_DATA_PROCESSING) &&
+                                decoded.register_shift) ? 3'd1 : 3'd0;
+  assign arm_mul_extra_cycles = timing_model_en ? multiply_internal_cycles(rs_data) : 3'd0;
+  assign thumb_exec_extra_cycles = (!timing_model_en || (thumb_decoded.op_class != THUMB_OP_ALU_REG)) ?
+                                   3'd0 :
+                                   (((thumb_decoded.alu_op == THUMB_ALU_LSL) ||
+                                     (thumb_decoded.alu_op == THUMB_ALU_LSR) ||
+                                     (thumb_decoded.alu_op == THUMB_ALU_ASR) ||
+                                     (thumb_decoded.alu_op == THUMB_ALU_ROR)) ? 3'd1 :
+                                    ((thumb_decoded.alu_op == THUMB_ALU_MUL) ?
+                                     multiply_internal_cycles(thumb_op2) : 3'd0));
   assign raddr_c = (state_q == ST_BLOCK_MEM) ? block_reg_q :
                    ((((decoded.op_class == ARM_OP_DATA_PROCESSING) && decoded.register_shift) ||
                      (decoded.op_class == ARM_OP_MULTIPLY) ||
@@ -643,9 +687,13 @@ module arm7tdmi_core
   assign bus_size_o  = (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_byte_q) ? BUS_SIZE_BYTE :
                        ((((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_half_q) ? BUS_SIZE_HALF :
                         (((state_q == ST_FETCH) && thumb_state) ? BUS_SIZE_HALF : BUS_SIZE_WORD));
-  assign bus_cycle_o = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
-                        (state_q == ST_BLOCK_MEM)) ? BUS_CYCLE_NONSEQ :
-                                                    (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ);
+  assign bus_cycle_o = timing_internal_state ? BUS_CYCLE_INT :
+                       ((state_q == ST_BLOCK_MEM) ? ((timing_model_en && !block_first_q) ?
+                                                     BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ) :
+                        ((state_q == ST_SWAP_WRITE) ? (timing_model_en ? BUS_CYCLE_SEQ :
+                                                       BUS_CYCLE_NONSEQ) :
+                         (((state_q == ST_MEM) ? BUS_CYCLE_NONSEQ :
+                           (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ)))));
   assign bus_wdata_o = (state_q == ST_BLOCK_MEM) ? block_store_data :
                        (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_wdata_q : 32'h0000_0000);
 
@@ -661,6 +709,9 @@ module arm7tdmi_core
       pc_q             <= 32'h0000_0000;
       instr_q          <= 32'h0000_0000;
       next_fetch_seq_q <= 1'b0;
+      timing_cycles_q  <= 3'h0;
+      timing_retire_q  <= 1'b0;
+      timing_resume_state_q <= ST_FETCH;
       mem_addr_q       <= 32'h0000_0000;
       mem_write_q      <= 1'b0;
       mem_load_q       <= 1'b0;
@@ -684,6 +735,7 @@ module arm7tdmi_core
       block_rn_q       <= 4'h0;
       block_wbdata_q   <= 32'h0000_0000;
       block_pc_wdata_q <= 32'h0000_0000;
+      block_first_q    <= 1'b0;
       exception_lr_q   <= 32'h0000_0000;
       exception_spsr_q <= 32'h0000_0000;
       mul64_hi_waddr_q <= 4'h0;
@@ -835,6 +887,7 @@ module arm7tdmi_core
                 block_thumb_q <= 1'b1;
                 block_rn_q <= {1'b0, thumb_decoded.rb};
                 block_wbdata_q <= rn_data + thumb_block_byte_count;
+                block_first_q <= 1'b1;
                 state_q <= ST_BLOCK_MEM;
               end
 
@@ -851,6 +904,7 @@ module arm7tdmi_core
                 block_rn_q <= 4'd13;
                 block_wbdata_q <= thumb_decoded.ls_load ? (rn_data + thumb_stack_byte_count) :
                                                            (rn_data - thumb_stack_byte_count);
+                block_first_q <= 1'b1;
                 state_q <= ST_BLOCK_MEM;
               end
 
@@ -864,6 +918,13 @@ module arm7tdmi_core
                 cpsr_wdata <= cpsr_with_flags(cpsr, thumb_flags);
                 pc_q       <= pc_q + 32'd2;
                 next_fetch_seq_q <= 1'b1;
+                if (thumb_exec_extra_cycles != 3'd0) begin
+                  retired_o <= 1'b0;
+                  timing_cycles_q <= thumb_exec_extra_cycles;
+                  timing_retire_q <= 1'b1;
+                  timing_resume_state_q <= ST_FETCH;
+                  state_q <= ST_TIMING;
+                end
               end
 
               THUMB_OP_LDR_PC: begin
@@ -1031,6 +1092,14 @@ module arm7tdmi_core
               cpsr_we    <= 1'b1;
               cpsr_wdata <= cpsr_with_flags(cpsr, alu_flags);
             end
+
+            if (arm_dp_extra_cycles != 3'd0) begin
+              retired_o <= 1'b0;
+              timing_cycles_q <= arm_dp_extra_cycles;
+              timing_retire_q <= 1'b1;
+              timing_resume_state_q <= ST_FETCH;
+              state_q <= ST_TIMING;
+            end
           end else if (decoded.op_class == ARM_OP_BRANCH) begin
             if (decoded.branch_link) begin
               reg_we    <= 1'b1;
@@ -1056,6 +1125,13 @@ module arm7tdmi_core
 
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
+            if (arm_mul_extra_cycles != 3'd0) begin
+              retired_o <= 1'b0;
+              timing_cycles_q <= arm_mul_extra_cycles;
+              timing_retire_q <= 1'b1;
+              timing_resume_state_q <= ST_FETCH;
+              state_q <= ST_TIMING;
+            end
           end else if (decoded.op_class == ARM_OP_LONG_MULTIPLY) begin
             reg_we    <= 1'b1;
             reg_waddr <= rd;
@@ -1068,7 +1144,14 @@ module arm7tdmi_core
               cpsr_wdata <= cpsr_with_flags(cpsr, mul_flags);
             end
 
-            state_q <= ST_MUL64_HI;
+            if (arm_mul_extra_cycles != 3'd0) begin
+              timing_cycles_q <= arm_mul_extra_cycles;
+              timing_retire_q <= 1'b0;
+              timing_resume_state_q <= ST_MUL64_HI;
+              state_q <= ST_TIMING;
+            end else begin
+              state_q <= ST_MUL64_HI;
+            end
           end else if (decoded.op_class == ARM_OP_PSR_TRANSFER) begin
             if (decoded.psr_write) begin
               if (decoded.psr_use_spsr) begin
@@ -1143,6 +1226,7 @@ module arm7tdmi_core
             block_rn_q <= rn;
             block_wbdata_q <= decoded.ls_up ? (rn_data + block_byte_count) :
                                                 (rn_data - block_byte_count);
+            block_first_q <= 1'b1;
             state_q <= ST_BLOCK_MEM;
           end else if (decoded.op_class == ARM_OP_SWI) begin
             exception_lr_q   <= pc_q + 32'd4;
@@ -1304,8 +1388,19 @@ module arm7tdmi_core
               mem_addr_q <= mem_addr_q + 32'd4;
               block_reglist_q <= block_next_reglist;
               block_reg_q <= block_next_reg;
+              block_first_q <= 1'b0;
             end
           end
+        end
+
+        ST_TIMING: begin
+          if (timing_cycles_q == 3'd1) begin
+            retired_o <= timing_retire_q;
+            timing_retire_q <= 1'b0;
+            state_q <= timing_resume_state_q;
+          end
+
+          timing_cycles_q <= timing_cycles_q - 3'd1;
         end
 
         ST_BLOCK_WB: begin

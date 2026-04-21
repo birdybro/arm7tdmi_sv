@@ -37,20 +37,55 @@ The repository Makefile provides the current regression surface:
 - `make tb-alu`
 - `make tb-regfile`
 - `make tb-core-branch`
+- `make tb-core-cycle-timing`
+- `make tb-core-bus-cycle-timing`
+- `make tb-core-mem-cycle-timing`
+- `make tb-core-thumb-cycle-timing`
+- `make tb-core-exception-cycle-timing`
+- `make tb-core-block-cycle-timing`
+- `make tb-core-prefetch-abort-cycle-timing`
+- `make tb-core-interrupt-cycle-timing`
+- `make tb-core-data-abort-cycle-timing`
+- `make tb-core-thumb-interwork-cycle-timing`
 - `make tb-core-thumb-interwork`
 - `make tb-core-thumb-shift`
+- `make tb-core-thumb-addsub`
+- `make tb-core-thumb-condbranch`
+- `make tb-core-thumb-hireg`
+- `make tb-core-thumb-alu`
+- `make tb-core-thumb-ldr-pc`
+- `make tb-core-thumb-ls-imm`
+- `make tb-core-thumb-ls-imm-wait`
+- `make tb-core-thumb-ls-reg`
+- `make tb-core-thumb-ls-sp`
+- `make tb-core-thumb-add-addr`
+- `make tb-core-thumb-sp-adjust`
+- `make tb-core-thumb-block`
+- `make tb-core-thumb-block-wait`
+- `make tb-core-thumb-stack`
+- `make tb-core-thumb-swi`
+- `make tb-core-thumb-bl`
+- `make tb-core-thumb-undefined`
+- `make tb-core-thumb-unsupported`
+- `make tb-core-thumb-data-abort`
+- `make tb-core-thumb-data-abort-store`
 - `make tb-core-mem`
+- `make tb-core-mem-wait`
 - `make tb-core-mem-ttrans`
 - `make tb-core-mem-regoffset`
 - `make tb-core-mem-pc`
 - `make tb-core-mem-pc-store`
+- `make tb-core-mem-pc-byte`
+- `make tb-core-mem-pc-down`
 - `make tb-core-mem-unaligned`
 - `make tb-core-multiply`
 - `make tb-core-halfword`
 - `make tb-core-halfword-modes`
 - `make tb-core-psr`
 - `make tb-core-swap`
+- `make tb-core-swap-wait`
 - `make tb-core-block`
+- `make tb-core-block-wait`
 - `make tb-core-block-empty`
 - `make tb-core-block-pc`
 - `make tb-core-block-pc-restore`
@@ -60,8 +95,10 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-interrupt`
 - `make tb-core-prefetch-abort`
 - `make tb-core-data-abort`
+- `make tb-core-data-abort-store`
 - `make tb-core-swap-abort`
 - `make tb-core-block-abort`
+- `make tb-core-block-abort-wait`
 - `make tb-core-exception-return`
 - `make test`
 
@@ -85,7 +122,7 @@ The repository Makefile provides the current regression surface:
 - ARM empty-list block transfer behavior, modeled as an `r15` transfer over a 64-byte base span.
 - ARM block load to `PC`, including `LDM ... {pc}^` CPSR restore from SPSR.
 - ARM privileged block-transfer user-bank forms: `LDM/STM ...^` without `PC`.
-- ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, `LDRT`/`STRT` decode through the post-indexed transfer path, PC-relative load/store forms without writeback, load/store writeback, word `LDR` to `PC`, and unaligned word-load rotation.
+- ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, post-indexed `LDRT`/`STRT` and `LDRBT`/`STRBT`, PC-relative load/store forms without writeback, load/store writeback, word `LDR` to `PC`, and unaligned word-load rotation.
 - ARM SWI exception entry to the SVC vector with LR/SPSR save.
 - ARM undefined-instruction exception entry to the UND vector for undefined and coprocessor instruction classes.
 - ARM IRQ and FIQ exception entry, with mask-bit checks and FIQ priority over IRQ.
@@ -94,6 +131,7 @@ The repository Makefile provides the current regression surface:
 - Data-processing exception return through `Rd == r15` and `S == 1`, restoring CPSR from SPSR.
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.
+- Optional cycle-timing mode with visible internal cycles, early-termination-style multiply timing, and sequential cycle marking for multi-beat block and swap transfers.
 
 ## Explicit Gaps
 
@@ -101,7 +139,7 @@ The repository Makefile provides the current regression surface:
 - Remaining block transfer edge cases and load/store edge cases.
 - Precise abort restart and external-memory side-effect behavior beyond the current bus-abort smoke coverage.
 - JTAG/EmbeddedICE/debug behavior.
-- Cycle-accurate instruction timing.
+- Full ARM7TDMI cycle-accurate timing coverage across all instruction classes and exception paths.
 - GBA-specific wait-state and prefetch behavior.
 
 The next sensible step is to add a small self-checking Verilator testbench around
