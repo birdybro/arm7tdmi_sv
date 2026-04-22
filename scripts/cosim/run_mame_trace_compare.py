@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +16,15 @@ def run_checked(cmd):
 
 def has_nonempty_file(path: Path) -> bool:
     return path.is_file() and path.stat().st_size > 0
+
+
+def parse_env_assignment(text: str):
+    key, sep, value = text.partition("=")
+    if not sep or not key:
+        raise argparse.ArgumentTypeError(
+            f"invalid environment assignment '{text}', expected NAME=value"
+        )
+    return key, value
 
 
 def main():
@@ -91,7 +101,14 @@ def main():
     parser.add_argument(
         "--allow-mame-failure-if-trace",
         action="store_true",
-        help="Continue if MAME exits nonzero but still produced a non-empty raw trace",
+        help="Continue if MAME exits nonzero but still produced a fresh non-empty raw trace",
+    )
+    parser.add_argument(
+        "--mame-env",
+        action="append",
+        type=parse_env_assignment,
+        default=[],
+        help="Environment assignment for MAME launch as NAME=value; may be specified multiple times",
     )
     args = parser.parse_args()
 
@@ -114,6 +131,10 @@ def main():
         )
 
     if args.machine and not args.skip_mame:
+        prior_stat = args.raw_trace.stat() if args.raw_trace.exists() else None
+        if args.raw_trace.exists():
+            args.raw_trace.unlink()
+
         mame_cmd = [
             args.mame_bin,
             args.machine,
@@ -126,12 +147,22 @@ def main():
             print("+", " ".join(str(part) for part in mame_cmd))
         else:
             print("+", " ".join(str(part) for part in mame_cmd))
-            result = subprocess.run(mame_cmd, check=False)
+            env = os.environ.copy()
+            for key, value in args.mame_env:
+                env[key] = value
+            result = subprocess.run(mame_cmd, check=False, env=env)
             if result.returncode != 0:
-                if args.allow_mame_failure_if_trace and has_nonempty_file(args.raw_trace):
+                fresh_trace = has_nonempty_file(args.raw_trace)
+                if prior_stat and fresh_trace:
+                    stat = args.raw_trace.stat()
+                    fresh_trace = (
+                        stat.st_mtime_ns != prior_stat.st_mtime_ns
+                        or stat.st_size != prior_stat.st_size
+                    )
+                if args.allow_mame_failure_if_trace and fresh_trace:
                     print(
                         f"warning: MAME exited with code {result.returncode}, "
-                        f"but continuing because {args.raw_trace} exists and is non-empty"
+                        f"but continuing because {args.raw_trace} was freshly generated"
                     )
                 else:
                     raise SystemExit(f"MAME failed with exit code {result.returncode}")
