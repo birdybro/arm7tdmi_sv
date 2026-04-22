@@ -11,12 +11,12 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 	rtl/arm7tdmi_regfile.sv \
 	rtl/arm7tdmi_core.sv
 
-.PHONY: lint test tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-cycle-timing tb-core-bus-cycle-timing tb-core-mem-cycle-timing tb-core-thumb-cycle-timing tb-core-exception-cycle-timing tb-core-block-cycle-timing tb-core-prefetch-abort-cycle-timing tb-core-interrupt-cycle-timing tb-core-data-abort-cycle-timing tb-core-thumb-interwork-cycle-timing tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-imm-wait tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-block-wait tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-thumb-data-abort tb-core-thumb-data-abort-store tb-core-mem tb-core-mem-wait tb-core-mem-ttrans tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-pc-store tb-core-mem-pc-byte tb-core-mem-pc-down tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-swap-wait tb-core-block tb-core-block-wait tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-data-abort-store tb-core-swap-abort tb-core-block-abort tb-core-block-abort-wait tb-core-exception-return clean
+.PHONY: lint test tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-cycle-timing tb-core-bus-cycle-timing tb-core-mem-cycle-timing tb-core-thumb-cycle-timing tb-core-exception-cycle-timing tb-core-block-cycle-timing tb-core-prefetch-abort-cycle-timing tb-core-interrupt-cycle-timing tb-core-data-abort-cycle-timing tb-core-swap-abort-cycle-timing tb-core-block-abort-cycle-timing tb-core-thumb-data-abort-cycle-timing tb-core-thumb-data-abort-store-cycle-timing tb-core-thumb-interwork-cycle-timing tb-core-thumb-swi-cycle-timing tb-core-thumb-undefined-cycle-timing tb-core-thumb-unsupported-cycle-timing tb-core-thumb-interrupt-cycle-timing tb-core-thumb-prefetch-abort-cycle-timing tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-imm-wait tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-block-wait tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-thumb-data-abort tb-core-thumb-data-abort-store tb-core-mem tb-core-mem-wait tb-core-mem-ttrans tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-pc-store tb-core-mem-pc-byte tb-core-mem-pc-down tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-swap-wait tb-core-block tb-core-block-wait tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-data-abort-store tb-core-swap-abort tb-core-block-abort tb-core-block-abort-wait tb-core-exception-return clean
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
 
-test: lint tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-cycle-timing tb-core-bus-cycle-timing tb-core-mem-cycle-timing tb-core-thumb-cycle-timing tb-core-exception-cycle-timing tb-core-block-cycle-timing tb-core-prefetch-abort-cycle-timing tb-core-interrupt-cycle-timing tb-core-data-abort-cycle-timing tb-core-thumb-interwork-cycle-timing tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-imm-wait tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-block-wait tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-thumb-data-abort tb-core-thumb-data-abort-store tb-core-mem tb-core-mem-wait tb-core-mem-ttrans tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-pc-store tb-core-mem-pc-byte tb-core-mem-pc-down tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-swap-wait tb-core-block tb-core-block-wait tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-data-abort-store tb-core-swap-abort tb-core-block-abort tb-core-block-abort-wait tb-core-exception-return
+test: lint tb-cond tb-arm-decode tb-thumb-decode tb-shifter tb-alu tb-regfile tb-core-smoke tb-core-branch tb-core-cycle-timing tb-core-bus-cycle-timing tb-core-mem-cycle-timing tb-core-thumb-cycle-timing tb-core-exception-cycle-timing tb-core-block-cycle-timing tb-core-prefetch-abort-cycle-timing tb-core-interrupt-cycle-timing tb-core-data-abort-cycle-timing tb-core-swap-abort-cycle-timing tb-core-block-abort-cycle-timing tb-core-thumb-data-abort-cycle-timing tb-core-thumb-data-abort-store-cycle-timing tb-core-thumb-interwork-cycle-timing tb-core-thumb-swi-cycle-timing tb-core-thumb-undefined-cycle-timing tb-core-thumb-unsupported-cycle-timing tb-core-thumb-interrupt-cycle-timing tb-core-thumb-prefetch-abort-cycle-timing tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-imm-wait tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-block-wait tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-thumb-data-abort tb-core-thumb-data-abort-store tb-core-mem tb-core-mem-wait tb-core-mem-ttrans tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-pc-store tb-core-mem-pc-byte tb-core-mem-pc-down tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-swap-wait tb-core-block tb-core-block-wait tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-data-abort-store tb-core-swap-abort tb-core-block-abort tb-core-block-abort-wait tb-core-exception-return
 
 tb-cond:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_cond $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_cond.sv
@@ -86,9 +86,45 @@ tb-core-data-abort-cycle-timing:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_data_abort_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_data_abort_cycle_timing.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_data_abort_cycle_timing
 
+tb-core-swap-abort-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_swap_abort_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_swap_abort_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_swap_abort_cycle_timing
+
+tb-core-block-abort-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_block_abort_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_block_abort_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_block_abort_cycle_timing
+
+tb-core-thumb-data-abort-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_data_abort_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_data_abort_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_data_abort_cycle_timing
+
+tb-core-thumb-data-abort-store-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_data_abort_store_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_data_abort_store_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_data_abort_store_cycle_timing
+
 tb-core-thumb-interwork-cycle-timing:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_interwork_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_interwork_cycle_timing.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_interwork_cycle_timing
+
+tb-core-thumb-swi-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_swi_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_swi_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_swi_cycle_timing
+
+tb-core-thumb-undefined-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_undefined_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_undefined_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_undefined_cycle_timing
+
+tb-core-thumb-unsupported-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_unsupported_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_unsupported_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_unsupported_cycle_timing
+
+tb-core-thumb-interrupt-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_interrupt_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_interrupt_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_interrupt_cycle_timing
+
+tb-core-thumb-prefetch-abort-cycle-timing:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_prefetch_abort_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_prefetch_abort_cycle_timing.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_prefetch_abort_cycle_timing
 
 tb-core-thumb-interwork:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_interwork $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_interwork.sv

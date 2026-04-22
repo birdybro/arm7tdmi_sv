@@ -46,7 +46,16 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-prefetch-abort-cycle-timing`
 - `make tb-core-interrupt-cycle-timing`
 - `make tb-core-data-abort-cycle-timing`
+- `make tb-core-swap-abort-cycle-timing`
+- `make tb-core-block-abort-cycle-timing`
+- `make tb-core-thumb-data-abort-cycle-timing`
+- `make tb-core-thumb-data-abort-store-cycle-timing`
 - `make tb-core-thumb-interwork-cycle-timing`
+- `make tb-core-thumb-swi-cycle-timing`
+- `make tb-core-thumb-undefined-cycle-timing`
+- `make tb-core-thumb-unsupported-cycle-timing`
+- `make tb-core-thumb-interrupt-cycle-timing`
+- `make tb-core-thumb-prefetch-abort-cycle-timing`
 - `make tb-core-thumb-interwork`
 - `make tb-core-thumb-shift`
 - `make tb-core-thumb-addsub`
