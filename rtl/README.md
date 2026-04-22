@@ -56,6 +56,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-thumb-unsupported-cycle-timing`
 - `make tb-core-thumb-interrupt-cycle-timing`
 - `make tb-core-thumb-prefetch-abort-cycle-timing`
+- `make tb-core-cosim-smoke`
 - `make tb-core-thumb-interwork`
 - `make tb-core-thumb-shift`
 - `make tb-core-thumb-addsub`
@@ -141,6 +142,7 @@ The repository Makefile provides the current regression surface:
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.
 - Optional cycle-timing mode with visible internal cycles, early-termination-style multiply timing, and sequential cycle marking for multi-beat block and swap transfers.
+- Initial processor-level co-simulation harness: generic RTL retire trace bench, JSON trace compare script, and MAME trace normalization/template flow.
 
 ## Explicit Gaps
 
