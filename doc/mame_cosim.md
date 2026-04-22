@@ -109,6 +109,18 @@ Run the complete RTL Thumb/interwork smoke on the RTL side:
 make tb-core-cosim-thumb-smoke
 ```
 
+Run the Thumb immediate load/store retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-ls-smoke
+```
+
+Prepare a `cm2005` ROM set from that Thumb load/store smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-ls-smoke-rom
+```
+
 ## Generic RTL Trace Capture
 
 You can run the trace bench directly with your own memory image:
