@@ -131,6 +131,9 @@ tb-core-cosim-smoke:
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_smoke.memh +trace=/tmp/arm7tdmi_cosim_smoke_rtl.jsonl +retired_limit=5 +max_cycles=200
 	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_smoke_ref.jsonl
 
+cosim-mame-smoke-script:
+	python3 scripts/cosim/render_mame_debug_script.py --cpu :maincpu --trace-output /tmp/arm7tdmi_cosim_smoke_mame_raw.trace --stop 0x10 --output /tmp/arm7tdmi_cosim_smoke_mame.cmd
+
 tb-core-thumb-interwork:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_interwork $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_interwork.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_interwork

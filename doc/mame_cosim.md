@@ -15,6 +15,10 @@ comparison.
   Normalizes MAME debugger trace lines carrying a `COSIM` marker into JSONL.
 - `scripts/cosim/mame_debug_trace_template.cmd`
   Template debugger script for MAME trace capture.
+- `scripts/cosim/render_mame_debug_script.py`
+  Renders a concrete debugger script from the template.
+- `scripts/cosim/run_mame_trace_compare.py`
+  Wraps script render, MAME trace normalization, and RTL-vs-MAME compare.
 - `sim/model/arm7tdmi_cosim_smoke.memh`
   Small ARM-only smoke program.
 - `sim/model/arm7tdmi_cosim_smoke_ref.jsonl`
@@ -91,11 +95,33 @@ this form:
 
 - `scripts/cosim/mame_debug_trace_template.cmd`
 
-Replace:
+Render a concrete debugger script:
+
+```sh
+python3 scripts/cosim/render_mame_debug_script.py \
+  --cpu :maincpu \
+  --trace-output /tmp/mame_raw.trace \
+  --stop 0x10 \
+  --output /tmp/mame_cosim.cmd
+```
+
+or use the convenience target:
+
+```sh
+make cosim-mame-smoke-script
+```
+
+Then replace:
 
 - `@@CPU@@` with the MAME CPU tag
 - `@@TRACE@@` with the output filename
 - `@@STOP@@` with a debugger stop condition or address
+
+Run MAME with debugger tracing enabled:
+
+```sh
+mame <machine> -debug -debugscript /tmp/mame_cosim.cmd
+```
 
 Then normalize it:
 
@@ -113,6 +139,18 @@ python3 scripts/cosim/compare_arm7tdmi_traces.py \
   --ref /tmp/mame_norm.jsonl
 ```
 
+or use the wrapper:
+
+```sh
+python3 scripts/cosim/run_mame_trace_compare.py \
+  --cpu :maincpu \
+  --stop 0x10 \
+  --rtl-trace /tmp/rtl_trace.jsonl \
+  --raw-trace /tmp/mame_raw.trace \
+  --norm-trace /tmp/mame_norm.jsonl \
+  --debug-script /tmp/mame_cosim.cmd
+```
+
 ## Current Limits
 
 This is intentionally a first-pass harness:
@@ -123,6 +161,8 @@ This is intentionally a first-pass harness:
   completion work.
 - Multi-write instructions like block transfers are logged but not yet compared
   as rich write lists.
+- The wrapper currently automates render/normalize/compare, but machine launch
+  details are still driver-specific.
 - A dedicated minimal MAME machine/driver for running arbitrary flat ARM7TDMI
   programs is still the next step if fully automated MAME trace generation is
   desired.
