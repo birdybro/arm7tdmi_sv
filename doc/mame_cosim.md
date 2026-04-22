@@ -18,7 +18,8 @@ comparison.
 - `scripts/cosim/render_mame_debug_script.py`
   Renders a concrete debugger script from the template.
 - `scripts/cosim/run_mame_trace_compare.py`
-  Wraps script render, MAME trace normalization, and RTL-vs-MAME compare.
+  Wraps script render, optional MAME launch, MAME trace normalization, and
+  RTL-vs-MAME compare.
 - `sim/model/arm7tdmi_cosim_smoke.memh`
   Small ARM-only smoke program.
 - `sim/model/arm7tdmi_cosim_smoke_ref.jsonl`
@@ -143,6 +144,7 @@ or use the wrapper:
 
 ```sh
 python3 scripts/cosim/run_mame_trace_compare.py \
+  --machine <machine> \
   --cpu :maincpu \
   --stop 0x10 \
   --rtl-trace /tmp/rtl_trace.jsonl \
@@ -150,6 +152,8 @@ python3 scripts/cosim/run_mame_trace_compare.py \
   --norm-trace /tmp/mame_norm.jsonl \
   --debug-script /tmp/mame_cosim.cmd
 ```
+
+If you already have a raw trace, omit `--machine` or pass `--skip-mame`.
 
 ## Current Limits
 
@@ -161,8 +165,8 @@ This is intentionally a first-pass harness:
   completion work.
 - Multi-write instructions like block transfers are logged but not yet compared
   as rich write lists.
-- The wrapper currently automates render/normalize/compare, but machine launch
-  details are still driver-specific.
+- The wrapper can launch MAME directly, but machine arguments and stop
+  conditions are still driver-specific.
 - A dedicated minimal MAME machine/driver for running arbitrary flat ARM7TDMI
   programs is still the next step if fully automated MAME trace generation is
   desired.

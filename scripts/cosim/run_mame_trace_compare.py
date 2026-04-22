@@ -15,7 +15,11 @@ def run_checked(cmd):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate a MAME debugger script, normalize a raw MAME trace, and compare it to an RTL trace"
+        description="Generate a MAME debugger script, optionally launch MAME, normalize a raw MAME trace, and compare it to an RTL trace"
+    )
+    parser.add_argument(
+        "--machine",
+        help="MAME machine name to launch; if omitted, MAME execution is skipped",
     )
     parser.add_argument("--cpu", required=True, help="MAME CPU tag or index")
     parser.add_argument(
@@ -55,9 +59,30 @@ def main():
         help="Use an existing debugger script instead of regenerating it",
     )
     parser.add_argument(
+        "--skip-mame",
+        action="store_true",
+        help="Skip launching MAME and use an existing raw trace file",
+    )
+    parser.add_argument(
         "--skip-normalize",
         action="store_true",
         help="Use an existing normalized MAME trace instead of regenerating it",
+    )
+    parser.add_argument(
+        "--mame-bin",
+        default="mame",
+        help="MAME executable to launch when --machine is provided",
+    )
+    parser.add_argument(
+        "--mame-arg",
+        action="append",
+        default=[],
+        help="Extra argument to pass through to MAME; may be specified multiple times",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the MAME command but do not execute it",
     )
     args = parser.parse_args()
 
@@ -78,6 +103,20 @@ def main():
                 str(args.debug_script),
             ]
         )
+
+    if args.machine and not args.skip_mame:
+        mame_cmd = [
+            args.mame_bin,
+            args.machine,
+            "-debug",
+            "-debugscript",
+            str(args.debug_script),
+            *args.mame_arg,
+        ]
+        if args.dry_run:
+            print("+", " ".join(str(part) for part in mame_cmd))
+        else:
+            run_checked(mame_cmd)
 
     if not args.skip_normalize:
         run_checked(
