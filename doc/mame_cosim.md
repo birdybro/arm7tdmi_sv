@@ -121,6 +121,12 @@ Run the Thumb `BL`/return retire-trace smoke on the RTL side:
 make tb-core-cosim-thumb-bl-smoke
 ```
 
+Run the Thumb PC-relative `LDR` retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-ldr-pc-smoke
+```
+
 Prepare a `cm2005` ROM set from that Thumb load/store smoke image:
 
 ```sh
@@ -131,6 +137,12 @@ Prepare a `cm2005` ROM set from the Thumb `BL` smoke image:
 
 ```sh
 make cosim-mame-cm2005-thumb-bl-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb PC-relative `LDR` smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-ldr-pc-smoke-rom
 ```
 
 ## Generic RTL Trace Capture
