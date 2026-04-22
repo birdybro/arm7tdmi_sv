@@ -94,11 +94,19 @@ which writes:
 ```
 
 from the repository smoke image.
+The prep flow also emits zero-filled placeholder companion ROMs for the `gfx`
+and `pld` regions so `cm2005` will pass MAME's required-file presence checks.
 
 Prepare both the ROM set and debugger script together:
 
 ```sh
 make cosim-mame-cm2005-smoke-prepare
+```
+
+Run the complete RTL-vs-MAME smoke compare against `cm2005`:
+
+```sh
+make tb-core-cosim-mame-cm2005-smoke
 ```
 
 ## Generic RTL Trace Capture
@@ -190,11 +198,14 @@ python3 scripts/cosim/run_mame_trace_compare.py \
   --raw-trace /tmp/mame_raw.trace \
   --norm-trace /tmp/mame_norm.jsonl \
   --debug-script /tmp/mame_cosim.cmd \
-  --mame-arg -rompath \
-  --mame-arg /tmp/arm7tdmi_mame_roms
+  --mame-arg=-rompath \
+  --mame-arg=/tmp/arm7tdmi_mame_roms \
+  --allow-mame-failure-if-trace
 ```
 
 If you already have a raw trace, omit `--machine` or pass `--skip-mame`.
+If your local MAME build exits nonzero after already writing a useful raw trace,
+pass `--allow-mame-failure-if-trace`.
 
 ## Current Limits
 
@@ -210,6 +221,8 @@ This is intentionally a first-pass harness:
   conditions are still driver-specific.
 - The `cm2005` path is intended for simple ARM-state smoke programs that stay
   within the ROM/RAM region already mapped by that skeleton driver.
+- Some headless environments may still need local SDL/audio tuning even when
+  the raw trace is successfully emitted.
 - A dedicated minimal MAME machine/driver for running arbitrary flat ARM7TDMI
   programs is still the next step if fully automated MAME trace generation is
   desired.

@@ -13,6 +13,10 @@ def run_checked(cmd):
     subprocess.run(cmd, check=True)
 
 
+def has_nonempty_file(path: Path) -> bool:
+    return path.is_file() and path.stat().st_size > 0
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate a MAME debugger script, optionally launch MAME, normalize a raw MAME trace, and compare it to an RTL trace"
@@ -84,6 +88,11 @@ def main():
         action="store_true",
         help="Print the MAME command but do not execute it",
     )
+    parser.add_argument(
+        "--allow-mame-failure-if-trace",
+        action="store_true",
+        help="Continue if MAME exits nonzero but still produced a non-empty raw trace",
+    )
     args = parser.parse_args()
 
     if not args.skip_render:
@@ -116,7 +125,16 @@ def main():
         if args.dry_run:
             print("+", " ".join(str(part) for part in mame_cmd))
         else:
-            run_checked(mame_cmd)
+            print("+", " ".join(str(part) for part in mame_cmd))
+            result = subprocess.run(mame_cmd, check=False)
+            if result.returncode != 0:
+                if args.allow_mame_failure_if_trace and has_nonempty_file(args.raw_trace):
+                    print(
+                        f"warning: MAME exited with code {result.returncode}, "
+                        f"but continuing because {args.raw_trace} exists and is non-empty"
+                    )
+                else:
+                    raise SystemExit(f"MAME failed with exit code {result.returncode}")
 
     if not args.skip_normalize:
         run_checked(

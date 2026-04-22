@@ -135,9 +135,12 @@ cosim-mame-smoke-script:
 	python3 scripts/cosim/render_mame_debug_script.py --cpu :maincpu --trace-output /tmp/arm7tdmi_cosim_smoke_mame_raw.trace --stop 0x10 --output /tmp/arm7tdmi_cosim_smoke_mame.cmd
 
 cosim-mame-cm2005-smoke-rom:
-	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms
+	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms --placeholder-rom a29800uv.12b:0x100000 --placeholder-rom gal16v8.10a:0x40000 --placeholder-rom gal16v8.10b:0x40000
 
 cosim-mame-cm2005-smoke-prepare: cosim-mame-cm2005-smoke-rom cosim-mame-smoke-script
+
+tb-core-cosim-mame-cm2005-smoke: tb-core-cosim-smoke cosim-mame-cm2005-smoke-rom
+	python3 scripts/cosim/run_mame_trace_compare.py --machine cm2005 --cpu :maincpu --stop 0x10 --rtl-trace /tmp/arm7tdmi_cosim_smoke_rtl.jsonl --raw-trace /tmp/arm7tdmi_cosim_smoke_mame_raw.trace --norm-trace /tmp/arm7tdmi_cosim_smoke_mame_norm.jsonl --debug-script /tmp/arm7tdmi_cosim_smoke_mame.cmd --mame-arg=-rompath --mame-arg=/tmp/arm7tdmi_mame_roms --mame-arg=-video --mame-arg=none --mame-arg=-sound --mame-arg=none --mame-arg=-skip_gameinfo --mame-arg=-seconds_to_run --mame-arg=1 --allow-mame-failure-if-trace
 
 tb-core-thumb-interwork:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_interwork $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_interwork.sv
