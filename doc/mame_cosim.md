@@ -20,6 +20,9 @@ comparison.
 - `scripts/cosim/run_mame_trace_compare.py`
   Wraps script render, optional MAME launch, MAME trace normalization, and
   RTL-vs-MAME compare.
+- `scripts/cosim/prepare_mame_rom_set.py`
+  Converts a byte-per-line `.memh` image into a disposable MAME ROM set
+  directory for an existing driver.
 - `sim/model/arm7tdmi_cosim_smoke.memh`
   Small ARM-only smoke program.
 - `sim/model/arm7tdmi_cosim_smoke_ref.jsonl`
@@ -64,6 +67,39 @@ This:
 2. runs the smoke memory image
 3. writes an RTL JSON trace to `/tmp/arm7tdmi_cosim_smoke_rtl.jsonl`
 4. compares it against the checked-in reference trace
+
+## Candidate MAME Smoke Target
+
+The current best existing MAME target for early ARM7TDMI smoke runs is
+`cm2005` from `ref/mame/src/mame/skeleton/dyna_d0404.cpp`:
+
+- CPU: `ARM7`
+- reset vector in ROM at `0x00000000`
+- program ROM region size: `0x100000`
+- main ROM filename expected by MAME: `a29800uv.11b`
+
+That gives a practical bridge from the repository smoke program into a real MAME
+machine without writing a custom driver first.
+
+Prepare a disposable ROM set for that machine:
+
+```sh
+make cosim-mame-cm2005-smoke-rom
+```
+
+which writes:
+
+```text
+/tmp/arm7tdmi_mame_roms/cm2005/a29800uv.11b
+```
+
+from the repository smoke image.
+
+Prepare both the ROM set and debugger script together:
+
+```sh
+make cosim-mame-cm2005-smoke-prepare
+```
 
 ## Generic RTL Trace Capture
 
@@ -121,7 +157,10 @@ Then replace:
 Run MAME with debugger tracing enabled:
 
 ```sh
-mame <machine> -debug -debugscript /tmp/mame_cosim.cmd
+mame cm2005 \
+  -rompath /tmp/arm7tdmi_mame_roms \
+  -debug \
+  -debugscript /tmp/mame_cosim.cmd
 ```
 
 Then normalize it:
@@ -144,13 +183,15 @@ or use the wrapper:
 
 ```sh
 python3 scripts/cosim/run_mame_trace_compare.py \
-  --machine <machine> \
+  --machine cm2005 \
   --cpu :maincpu \
   --stop 0x10 \
   --rtl-trace /tmp/rtl_trace.jsonl \
   --raw-trace /tmp/mame_raw.trace \
   --norm-trace /tmp/mame_norm.jsonl \
-  --debug-script /tmp/mame_cosim.cmd
+  --debug-script /tmp/mame_cosim.cmd \
+  --mame-arg -rompath \
+  --mame-arg /tmp/arm7tdmi_mame_roms
 ```
 
 If you already have a raw trace, omit `--machine` or pass `--skip-mame`.
@@ -167,6 +208,8 @@ This is intentionally a first-pass harness:
   as rich write lists.
 - The wrapper can launch MAME directly, but machine arguments and stop
   conditions are still driver-specific.
+- The `cm2005` path is intended for simple ARM-state smoke programs that stay
+  within the ROM/RAM region already mapped by that skeleton driver.
 - A dedicated minimal MAME machine/driver for running arbitrary flat ARM7TDMI
   programs is still the next step if fully automated MAME trace generation is
   desired.

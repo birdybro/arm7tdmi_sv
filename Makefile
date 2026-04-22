@@ -134,6 +134,11 @@ tb-core-cosim-smoke:
 cosim-mame-smoke-script:
 	python3 scripts/cosim/render_mame_debug_script.py --cpu :maincpu --trace-output /tmp/arm7tdmi_cosim_smoke_mame_raw.trace --stop 0x10 --output /tmp/arm7tdmi_cosim_smoke_mame.cmd
 
+cosim-mame-cm2005-smoke-rom:
+	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms
+
+cosim-mame-cm2005-smoke-prepare: cosim-mame-cm2005-smoke-rom cosim-mame-smoke-script
+
 tb-core-thumb-interwork:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_interwork $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_interwork.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_interwork
