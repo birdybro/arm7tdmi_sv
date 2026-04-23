@@ -56,6 +56,10 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-thumb-unsupported-cycle-timing`
 - `make tb-core-thumb-interrupt-cycle-timing`
 - `make tb-core-thumb-prefetch-abort-cycle-timing`
+- `make tb-core-cosim-smokes`
+- `make tb-core-cosim-arm-smokes`
+- `make tb-core-cosim-thumb-smokes`
+- `make tb-core-cosim-thumb-exception-smokes`
 - `make tb-core-cosim-smoke`
 - `make tb-core-cosim-thumb-smoke`
 - `make tb-core-cosim-thumb-ls-smoke`

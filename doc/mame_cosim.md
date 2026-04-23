@@ -103,6 +103,30 @@ Prepare both the ROM set and debugger script together:
 make cosim-mame-cm2005-smoke-prepare
 ```
 
+Run all checked RTL retire-trace co-sim smokes:
+
+```sh
+make tb-core-cosim-smokes
+```
+
+Run the ARM-only retire-trace co-sim smoke suite:
+
+```sh
+make tb-core-cosim-arm-smokes
+```
+
+Run the Thumb-only retire-trace co-sim smoke suite:
+
+```sh
+make tb-core-cosim-thumb-smokes
+```
+
+Run only the Thumb exception-entry retire-trace co-sim smoke suite:
+
+```sh
+make tb-core-cosim-thumb-exception-smokes
+```
+
 Run the complete RTL Thumb/interwork smoke on the RTL side:
 
 ```sh

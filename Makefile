@@ -15,6 +15,7 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 .PHONY: tb-core-cosim-thumb-exception-smokes
 .PHONY: tb-core-cosim-thumb-smokes
 .PHONY: tb-core-cosim-arm-smokes
+.PHONY: tb-core-cosim-smokes
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
@@ -304,6 +305,8 @@ tb-core-cosim-arm-block-pc-restore-smoke:
 	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_arm_block_pc_restore_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_arm_block_pc_restore_smoke_ref.jsonl
 
 tb-core-cosim-arm-smokes: tb-core-cosim-smoke tb-core-cosim-arm-swi-smoke tb-core-cosim-arm-undefined-smoke tb-core-cosim-arm-branch-smoke tb-core-cosim-arm-mem-smoke tb-core-cosim-arm-halfword-smoke tb-core-cosim-arm-swap-smoke tb-core-cosim-arm-block-smoke tb-core-cosim-arm-block-empty-smoke tb-core-cosim-arm-block-user-smoke tb-core-cosim-arm-block-pc-smoke tb-core-cosim-arm-block-pc-restore-smoke
+
+tb-core-cosim-smokes: tb-core-cosim-arm-smokes tb-core-cosim-thumb-smokes
 
 cosim-mame-smoke-script:
 	python3 scripts/cosim/render_mame_debug_script.py --cpu :maincpu --trace-output /tmp/arm7tdmi_cosim_smoke_mame_raw.trace --stop 0x10 --output /tmp/arm7tdmi_cosim_smoke_mame.cmd
