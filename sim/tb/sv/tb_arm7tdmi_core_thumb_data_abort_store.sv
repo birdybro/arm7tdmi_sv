@@ -58,15 +58,14 @@ module tb_arm7tdmi_core_thumb_data_abort_store
   always_comb begin
     unique case (bus_addr)
       32'h0000_0000: bus_rdata = 32'hEA00_000E; // B 0x40
-      32'h0000_0004: bus_rdata = 32'hE10F_0000; // MRS r0, CPSR
-      32'h0000_0008: bus_rdata = 32'hE14F_1000; // MRS r1, SPSR
-      32'h0000_000C: bus_rdata = 32'hEAFF_FFFE; // B .
+      32'h0000_0010: bus_rdata = 32'hE10F_0000; // MRS r0, CPSR
+      32'h0000_0014: bus_rdata = 32'hE14F_1000; // MRS r1, SPSR
+      32'h0000_0018: bus_rdata = 32'hEAFF_FFFE; // B .
       32'h0000_0040: bus_rdata = 32'hE3A0_6021; // MOV r6, #0x21
-      32'h0000_0044: bus_rdata = 32'hE12F_FF16; // BX r6
+      32'h0000_0044: bus_rdata = bus_write ? data_word : 32'hE12F_FF16; // Data path shares the BX address.
       32'h0000_0020: bus_rdata = 32'h0000_2040; // Thumb MOV r0, #0x40
       32'h0000_0022: bus_rdata = 32'h0000_212A; // Thumb MOV r1, #0x2a
       32'h0000_0024: bus_rdata = 32'h0000_6041; // Thumb STR r1, [r0, #4]
-      32'h0000_0044: bus_rdata = data_word;
       default:       bus_rdata = 32'hE1A0_0000;
     endcase
   end
@@ -111,9 +110,9 @@ module tb_arm7tdmi_core_thumb_data_abort_store
       end
 
       if (debug_reg_we && debug_reg_waddr == 4'd14 && debug_reg_wdata == 32'h0000_0028) lr_seen++;
-      if (debug_reg_we && debug_reg_waddr == 4'd0 && debug_reg_wdata == 32'h0000_0097) cpsr_seen++;
+      if (debug_reg_we && debug_reg_waddr == 4'd0 && debug_reg_wdata == 32'h0000_00D7) cpsr_seen++;
       if (debug_reg_we && debug_reg_waddr == 4'd1 && debug_reg_wdata == 32'h0000_00F3) spsr_seen++;
-      if (retired && debug_pc == 32'h0000_000C && debug_cpsr == 32'h0000_0097) loop_seen++;
+      if (retired && debug_pc == 32'h0000_0018 && debug_cpsr == 32'h0000_00D7) loop_seen++;
     end
 
     if (lr_seen != 1 || cpsr_seen != 1 || spsr_seen != 1) begin
@@ -126,7 +125,7 @@ module tb_arm7tdmi_core_thumb_data_abort_store
     if (data_word != 32'hCAFE_F00D) begin
       $fatal(1, "Thumb aborted store changed memory to %08x", data_word);
     end
-    if (debug_cpsr != 32'h0000_0097) begin
+    if (debug_cpsr != 32'h0000_00D7) begin
       $fatal(1, "expected Thumb store data abort to enter ABT, got %08x", debug_cpsr);
     end
     if (loop_seen < 2) begin
