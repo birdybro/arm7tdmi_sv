@@ -17,6 +17,8 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 .PHONY: tb-core-cosim-arm-smokes
 .PHONY: tb-core-cosim-smokes
 .PHONY: tb-core-cycle-timing-smokes
+.PHONY: tb-core-thumb-functional-smokes
+.PHONY: tb-core-arm-functional-smokes
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
@@ -506,6 +508,8 @@ tb-core-thumb-data-abort-store:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_data_abort_store $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_data_abort_store.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_data_abort_store
 
+tb-core-thumb-functional-smokes: tb-core-thumb-interwork tb-core-thumb-shift tb-core-thumb-addsub tb-core-thumb-condbranch tb-core-thumb-hireg tb-core-thumb-alu tb-core-thumb-ldr-pc tb-core-thumb-ls-imm tb-core-thumb-ls-imm-wait tb-core-thumb-ls-reg tb-core-thumb-ls-sp tb-core-thumb-add-addr tb-core-thumb-sp-adjust tb-core-thumb-block tb-core-thumb-block-wait tb-core-thumb-stack tb-core-thumb-swi tb-core-thumb-bl tb-core-thumb-undefined tb-core-thumb-unsupported tb-core-thumb-data-abort tb-core-thumb-data-abort-store
+
 tb-core-mem:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_mem $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_mem.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_mem
@@ -629,6 +633,8 @@ tb-core-block-abort-wait:
 tb-core-exception-return:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_exception_return $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_exception_return.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_exception_return
+
+tb-core-arm-functional-smokes: tb-core-smoke tb-core-branch tb-core-mem tb-core-mem-wait tb-core-mem-ttrans tb-core-mem-regoffset tb-core-mem-pc tb-core-mem-pc-store tb-core-mem-pc-byte tb-core-mem-pc-down tb-core-mem-unaligned tb-core-multiply tb-core-halfword tb-core-halfword-modes tb-core-psr tb-core-swap tb-core-swap-wait tb-core-block tb-core-block-wait tb-core-block-empty tb-core-block-pc tb-core-block-pc-restore tb-core-block-user tb-core-exception tb-core-undefined tb-core-interrupt tb-core-prefetch-abort tb-core-data-abort tb-core-data-abort-store tb-core-swap-abort tb-core-block-abort tb-core-block-abort-wait tb-core-exception-return
 
 clean:
 	rm -rf $(BUILD_DIR)

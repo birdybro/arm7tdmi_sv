@@ -115,6 +115,18 @@ Run all checked cycle/timing smoke tests:
 make tb-core-cycle-timing-smokes
 ```
 
+Run the ARM directed functional smoke suite:
+
+```sh
+make tb-core-arm-functional-smokes
+```
+
+Run the Thumb directed functional smoke suite:
+
+```sh
+make tb-core-thumb-functional-smokes
+```
+
 Run the ARM-only retire-trace co-sim smoke suite:
 
 ```sh

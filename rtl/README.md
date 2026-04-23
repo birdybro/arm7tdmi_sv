@@ -61,6 +61,8 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-cosim-arm-smokes`
 - `make tb-core-cosim-thumb-smokes`
 - `make tb-core-cosim-thumb-exception-smokes`
+- `make tb-core-arm-functional-smokes`
+- `make tb-core-thumb-functional-smokes`
 - `make tb-core-cosim-smoke`
 - `make tb-core-cosim-thumb-smoke`
 - `make tb-core-cosim-thumb-ls-smoke`
