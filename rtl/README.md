@@ -161,7 +161,7 @@ The repository Makefile provides the current regression surface:
 - Register banking foundation for FIQ, IRQ, SVC, ABT, and UND modes.
 - Bus request fields for address, read/write, transfer size, and cycle class.
 - Optional cycle-timing mode with visible internal cycles, early-termination-style multiply timing, and sequential cycle marking for multi-beat block and swap transfers.
-- Initial processor-level co-simulation harness: generic RTL retire trace bench, JSON trace compare script, scripted MAME trace render/normalization flow, and smoke images covering ARM branch/memory/block cases plus growing Thumb interwork, control-flow, stack, SP-relative, address-generation, and load/store coverage.
+- Initial processor-level co-simulation harness: generic RTL retire trace bench, JSON trace compare script, scripted MAME trace render/normalization flow, and smoke images covering ARM branch/memory/block cases plus growing Thumb interwork, control-flow, high-register, shift, add/sub, stack, SP-relative, address-generation, and load/store coverage.
 
 ## Explicit Gaps
 

@@ -133,6 +133,24 @@ Run the Thumb conditional-branch retire-trace smoke on the RTL side:
 make tb-core-cosim-thumb-condbranch-smoke
 ```
 
+Run the Thumb high-register retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-hireg-smoke
+```
+
+Run the Thumb immediate-shift retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-shift-smoke
+```
+
+Run the Thumb add/sub retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-addsub-smoke
+```
+
 Run the Thumb stack retire-trace smoke on the RTL side:
 
 ```sh
@@ -269,6 +287,24 @@ Prepare a `cm2005` ROM set from the Thumb conditional-branch smoke image:
 
 ```sh
 make cosim-mame-cm2005-thumb-condbranch-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb high-register smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-hireg-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb immediate-shift smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-shift-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb add/sub smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-addsub-smoke-rom
 ```
 
 Prepare a `cm2005` ROM set from the Thumb stack smoke image:
