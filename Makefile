@@ -16,6 +16,7 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 .PHONY: tb-core-cosim-thumb-smokes
 .PHONY: tb-core-cosim-arm-smokes
 .PHONY: tb-core-cosim-smokes
+.PHONY: tb-core-cycle-timing-smokes
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
@@ -129,6 +130,8 @@ tb-core-thumb-interrupt-cycle-timing:
 tb-core-thumb-prefetch-abort-cycle-timing:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_prefetch_abort_cycle_timing $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_prefetch_abort_cycle_timing.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_thumb_prefetch_abort_cycle_timing
+
+tb-core-cycle-timing-smokes: tb-core-cycle-timing tb-core-bus-cycle-timing tb-core-mem-cycle-timing tb-core-thumb-cycle-timing tb-core-exception-cycle-timing tb-core-block-cycle-timing tb-core-prefetch-abort-cycle-timing tb-core-interrupt-cycle-timing tb-core-data-abort-cycle-timing tb-core-swap-abort-cycle-timing tb-core-block-abort-cycle-timing tb-core-thumb-data-abort-cycle-timing tb-core-thumb-data-abort-store-cycle-timing tb-core-thumb-interwork-cycle-timing tb-core-thumb-swi-cycle-timing tb-core-thumb-undefined-cycle-timing tb-core-thumb-unsupported-cycle-timing tb-core-thumb-interrupt-cycle-timing tb-core-thumb-prefetch-abort-cycle-timing
 
 tb-core-cosim-smoke:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_cosim_trace $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_cosim_trace.sv

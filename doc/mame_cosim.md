@@ -109,6 +109,12 @@ Run all checked RTL retire-trace co-sim smokes:
 make tb-core-cosim-smokes
 ```
 
+Run all checked cycle/timing smoke tests:
+
+```sh
+make tb-core-cycle-timing-smokes
+```
+
 Run the ARM-only retire-trace co-sim smoke suite:
 
 ```sh

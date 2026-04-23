@@ -37,6 +37,7 @@ The repository Makefile provides the current regression surface:
 - `make tb-alu`
 - `make tb-regfile`
 - `make tb-core-branch`
+- `make tb-core-cycle-timing-smokes`
 - `make tb-core-cycle-timing`
 - `make tb-core-bus-cycle-timing`
 - `make tb-core-mem-cycle-timing`
