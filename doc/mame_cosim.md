@@ -163,6 +163,18 @@ Run the ARM undefined-instruction retire-trace smoke on the RTL side:
 make tb-core-cosim-arm-undefined-smoke
 ```
 
+Run the ARM branch/call retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-arm-branch-smoke
+```
+
+Run the ARM single-transfer retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-arm-mem-smoke
+```
+
 Prepare a `cm2005` ROM set from that Thumb load/store smoke image:
 
 ```sh
@@ -215,6 +227,18 @@ Prepare a `cm2005` ROM set from the ARM undefined smoke image:
 
 ```sh
 make cosim-mame-cm2005-arm-undefined-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM branch smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-branch-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM memory smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-mem-smoke-rom
 ```
 
 ## Generic RTL Trace Capture
