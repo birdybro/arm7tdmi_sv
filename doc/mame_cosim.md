@@ -205,6 +205,18 @@ Run the ARM user-bank `^` block-transfer smoke on the RTL side:
 make tb-core-cosim-arm-block-user-smoke
 ```
 
+Run the ARM block-transfer `{pc}` smoke on the RTL side:
+
+```sh
+make tb-core-cosim-arm-block-pc-smoke
+```
+
+Run the ARM block-transfer `{pc}^` restore smoke on the RTL side:
+
+```sh
+make tb-core-cosim-arm-block-pc-restore-smoke
+```
+
 Prepare a `cm2005` ROM set from that Thumb load/store smoke image:
 
 ```sh
@@ -287,6 +299,39 @@ Prepare a `cm2005` ROM set from the ARM block-transfer smoke image:
 
 ```sh
 make cosim-mame-cm2005-arm-block-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM block `{pc}` smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-block-pc-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM block `{pc}^` restore smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-block-pc-restore-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM empty block-transfer smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-block-empty-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM user-bank block-transfer smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-block-user-smoke-rom
+```
+
+The generic trace bench also supports optional interrupt driving for exception-return programs:
+
+```sh
++irq_initial=1
++irq_raise_cycle=1
++irq_clear_on_reg_addr=14
++irq_clear_on_reg_data=10
 ```
 
 Prepare a `cm2005` ROM set from the ARM empty block-transfer smoke image:

@@ -24,6 +24,8 @@ module tb_arm7tdmi_core_cosim_trace
   logic [31:0] debug_reg_wdata;
   logic retired;
   logic unsupported;
+  logic irq;
+  logic fiq;
 
   logic [7:0] mem [0:MEM_BYTES-1];
 
@@ -32,6 +34,12 @@ module tb_arm7tdmi_core_cosim_trace
   integer cycle_count;
   integer retired_limit;
   integer max_cycles;
+  integer irq_initial;
+  integer fiq_initial;
+  integer irq_raise_cycle;
+  integer irq_clear_on_reg_addr;
+  logic [31:0] irq_clear_on_reg_data;
+  logic irq_clear_on_reg_data_valid;
   integer mem_write_count;
   logic [31:0] last_mem_addr;
   logic [31:0] last_mem_data;
@@ -66,8 +74,8 @@ module tb_arm7tdmi_core_cosim_trace
     .bus_rdata_i(bus_rdata),
     .bus_ready_i(bus_ready),
     .bus_abort_i(1'b0),
-    .irq_i(1'b0),
-    .fiq_i(1'b0),
+    .irq_i(irq),
+    .fiq_i(fiq),
     .debug_pc_o(debug_pc),
     .debug_cpsr_o(debug_cpsr),
     .debug_reg_we_o(debug_reg_we),
@@ -208,6 +216,19 @@ module tb_arm7tdmi_core_cosim_trace
     if (!$value$plusargs("max_cycles=%d", max_cycles)) begin
       max_cycles = 1000;
     end
+    if (!$value$plusargs("irq_initial=%d", irq_initial)) begin
+      irq_initial = 0;
+    end
+    if (!$value$plusargs("fiq_initial=%d", fiq_initial)) begin
+      fiq_initial = 0;
+    end
+    if (!$value$plusargs("irq_raise_cycle=%d", irq_raise_cycle)) begin
+      irq_raise_cycle = -1;
+    end
+    if (!$value$plusargs("irq_clear_on_reg_addr=%d", irq_clear_on_reg_addr)) begin
+      irq_clear_on_reg_addr = -1;
+    end
+    irq_clear_on_reg_data_valid = $value$plusargs("irq_clear_on_reg_data=%h", irq_clear_on_reg_data);
 
     $readmemh(memh_path, mem);
 
@@ -218,6 +239,8 @@ module tb_arm7tdmi_core_cosim_trace
 
     rst_n = 1'b0;
     bus_ready = 1'b1;
+    irq = (irq_initial != 0);
+    fiq = (fiq_initial != 0);
     retired_count = 0;
     cycle_count = 0;
     mem_write_count = 0;
@@ -247,6 +270,10 @@ module tb_arm7tdmi_core_cosim_trace
       #1;
       cycle_count++;
 
+      if (irq_raise_cycle >= 0 && cycle_count == irq_raise_cycle) begin
+        irq = 1'b1;
+      end
+
       if (unsupported) begin
         $fatal(1, "unsupported instruction at pc=%08x", debug_pc);
       end
@@ -274,6 +301,12 @@ module tb_arm7tdmi_core_cosim_trace
         last_mem_addr = 32'h0000_0000;
         last_mem_data = 32'h0000_0000;
         last_mem_size = BUS_SIZE_WORD;
+      end
+
+      if (irq && debug_reg_we && irq_clear_on_reg_addr >= 0 &&
+          debug_reg_waddr == irq_clear_on_reg_addr[3:0] &&
+          (!irq_clear_on_reg_data_valid || debug_reg_wdata == irq_clear_on_reg_data)) begin
+        irq = 1'b0;
       end
 
       sampled_pc = debug_pc;
