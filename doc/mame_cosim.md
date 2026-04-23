@@ -500,24 +500,18 @@ The generic trace bench also supports optional interrupt driving for exception-r
 +irq_raise_cycle=1
 +irq_clear_on_reg_addr=14
 +irq_clear_on_reg_data=10
++fiq_initial=1
++fiq_raise_cycle=1
++fiq_clear_on_reg_addr=14
++fiq_clear_on_reg_data=10
 ```
 
-It also supports a simple fetch-abort hook for exception-entry traces:
+It also supports simple read/write abort hooks for exception-entry traces. `+abort_on_debug_pc` is optional; use it when the same address is shared by an instruction fetch and the target data access.
 
 ```sh
 +abort_on_fetch_addr=2a
-```
-
-Prepare a `cm2005` ROM set from the ARM empty block-transfer smoke image:
-
-```sh
-make cosim-mame-cm2005-arm-block-empty-smoke-rom
-```
-
-Prepare a `cm2005` ROM set from the ARM user-bank block-transfer smoke image:
-
-```sh
-make cosim-mame-cm2005-arm-block-user-smoke-rom
++abort_on_write_addr=44
++abort_on_debug_pc=24
 ```
 
 ## Generic RTL Trace Capture
