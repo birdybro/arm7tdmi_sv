@@ -133,6 +133,12 @@ Run the Thumb conditional-branch retire-trace smoke on the RTL side:
 make tb-core-cosim-thumb-condbranch-smoke
 ```
 
+Run the Thumb IRQ-entry retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-interrupt-smoke
+```
+
 Run the Thumb ALU-opcode retire-trace smoke on the RTL side:
 
 ```sh
@@ -295,6 +301,12 @@ Prepare a `cm2005` ROM set from the Thumb conditional-branch smoke image:
 make cosim-mame-cm2005-thumb-condbranch-smoke-rom
 ```
 
+Prepare a `cm2005` ROM set from the Thumb IRQ-entry smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-interrupt-smoke-rom
+```
+
 Prepare a `cm2005` ROM set from the Thumb ALU-opcode smoke image:
 
 ```sh
@@ -433,13 +445,19 @@ Prepare a `cm2005` ROM set from the ARM user-bank block-transfer smoke image:
 make cosim-mame-cm2005-arm-block-user-smoke-rom
 ```
 
-The generic trace bench also supports optional interrupt driving for exception-return programs:
+The generic trace bench also supports optional interrupt driving for exception-return and exception-entry programs:
 
 ```sh
 +irq_initial=1
 +irq_raise_cycle=1
 +irq_clear_on_reg_addr=14
 +irq_clear_on_reg_data=10
+```
+
+It also supports a simple fetch-abort hook for exception-entry traces:
+
+```sh
++abort_on_fetch_addr=2a
 ```
 
 Prepare a `cm2005` ROM set from the ARM empty block-transfer smoke image:
