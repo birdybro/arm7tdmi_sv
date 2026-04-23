@@ -145,6 +145,24 @@ Run the Thumb register-offset load/store retire-trace smoke on the RTL side:
 make tb-core-cosim-thumb-ls-reg-smoke
 ```
 
+Run the Thumb SP-relative load/store retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-ls-sp-smoke
+```
+
+Run the Thumb SP-adjust retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-sp-adjust-smoke
+```
+
+Run the Thumb PC/SP address-add retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-add-addr-smoke
+```
+
 Run the ARM `SWI` retire-trace smoke on the RTL side:
 
 ```sh
@@ -263,6 +281,24 @@ Prepare a `cm2005` ROM set from the Thumb register-offset load/store smoke image
 
 ```sh
 make cosim-mame-cm2005-thumb-ls-reg-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb SP-relative load/store smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-ls-sp-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb SP-adjust smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-sp-adjust-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb PC/SP address-add smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-add-addr-smoke-rom
 ```
 
 Prepare a `cm2005` ROM set from the ARM `SWI` smoke image:
