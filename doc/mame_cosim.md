@@ -139,6 +139,12 @@ Run the Thumb IRQ-entry retire-trace smoke on the RTL side:
 make tb-core-cosim-thumb-interrupt-smoke
 ```
 
+Run the Thumb prefetch-abort retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-prefetch-abort-smoke
+```
+
 Run the Thumb ALU-opcode retire-trace smoke on the RTL side:
 
 ```sh
@@ -305,6 +311,12 @@ Prepare a `cm2005` ROM set from the Thumb IRQ-entry smoke image:
 
 ```sh
 make cosim-mame-cm2005-thumb-interrupt-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb prefetch-abort smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-prefetch-abort-smoke-rom
 ```
 
 Prepare a `cm2005` ROM set from the Thumb ALU-opcode smoke image:
