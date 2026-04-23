@@ -64,6 +64,8 @@ The repository Makefile provides the current regression surface:
 - `make tb-core-cosim-thumb-condbranch-smoke`
 - `make tb-core-cosim-arm-swi-smoke`
 - `make tb-core-cosim-thumb-swi-smoke`
+- `make tb-core-cosim-thumb-undefined-smoke`
+- `make tb-core-cosim-thumb-unsupported-smoke`
 - `make tb-core-thumb-interwork`
 - `make tb-core-thumb-shift`
 - `make tb-core-thumb-addsub`
