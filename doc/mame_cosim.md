@@ -157,6 +157,12 @@ Run the Thumb unsupported-pattern retire-trace smoke on the RTL side:
 make tb-core-cosim-thumb-unsupported-smoke
 ```
 
+Run the ARM undefined-instruction retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-arm-undefined-smoke
+```
+
 Prepare a `cm2005` ROM set from that Thumb load/store smoke image:
 
 ```sh
@@ -203,6 +209,12 @@ Prepare a `cm2005` ROM set from the Thumb unsupported smoke image:
 
 ```sh
 make cosim-mame-cm2005-thumb-unsupported-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM undefined smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-undefined-smoke-rom
 ```
 
 ## Generic RTL Trace Capture
