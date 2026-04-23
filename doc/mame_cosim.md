@@ -157,6 +157,12 @@ Run the Thumb data-abort retire-trace smoke on the RTL side:
 make tb-core-cosim-thumb-data-abort-smoke
 ```
 
+Run the Thumb store data-abort retire-trace smoke on the RTL side:
+
+```sh
+make tb-core-cosim-thumb-data-abort-store-smoke
+```
+
 Run the Thumb ALU-opcode retire-trace smoke on the RTL side:
 
 ```sh
@@ -341,6 +347,12 @@ Prepare a `cm2005` ROM set from the Thumb data-abort smoke image:
 
 ```sh
 make cosim-mame-cm2005-thumb-data-abort-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the Thumb store data-abort smoke image:
+
+```sh
+make cosim-mame-cm2005-thumb-data-abort-store-smoke-rom
 ```
 
 Prepare a `cm2005` ROM set from the Thumb ALU-opcode smoke image:
