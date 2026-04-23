@@ -193,6 +193,18 @@ Run the ARM block-transfer retire-trace smoke on the RTL side:
 make tb-core-cosim-arm-block-smoke
 ```
 
+Run the ARM empty-register-list block-transfer smoke on the RTL side:
+
+```sh
+make tb-core-cosim-arm-block-empty-smoke
+```
+
+Run the ARM user-bank `^` block-transfer smoke on the RTL side:
+
+```sh
+make tb-core-cosim-arm-block-user-smoke
+```
+
 Prepare a `cm2005` ROM set from that Thumb load/store smoke image:
 
 ```sh
@@ -275,6 +287,18 @@ Prepare a `cm2005` ROM set from the ARM block-transfer smoke image:
 
 ```sh
 make cosim-mame-cm2005-arm-block-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM empty block-transfer smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-block-empty-smoke-rom
+```
+
+Prepare a `cm2005` ROM set from the ARM user-bank block-transfer smoke image:
+
+```sh
+make cosim-mame-cm2005-arm-block-user-smoke-rom
 ```
 
 ## Generic RTL Trace Capture

@@ -206,6 +206,16 @@ tb-core-cosim-arm-block-smoke:
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_arm_block_smoke.memh +trace=/tmp/arm7tdmi_cosim_arm_block_smoke_rtl.jsonl +retired_limit=18 +max_cycles=420
 	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_arm_block_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_arm_block_smoke_ref.jsonl
 
+tb-core-cosim-arm-block-empty-smoke:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_cosim_trace $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_cosim_trace.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_arm_block_empty_smoke.memh +trace=/tmp/arm7tdmi_cosim_arm_block_empty_smoke_rtl.jsonl +retired_limit=6 +max_cycles=220
+	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_arm_block_empty_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_arm_block_empty_smoke_ref.jsonl
+
+tb-core-cosim-arm-block-user-smoke:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_cosim_trace $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_cosim_trace.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_arm_block_user_smoke.memh +trace=/tmp/arm7tdmi_cosim_arm_block_user_smoke_rtl.jsonl +retired_limit=14 +max_cycles=360
+	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_arm_block_user_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_arm_block_user_smoke_ref.jsonl
+
 cosim-mame-smoke-script:
 	python3 scripts/cosim/render_mame_debug_script.py --cpu :maincpu --trace-output /tmp/arm7tdmi_cosim_smoke_mame_raw.trace --stop 0x10 --output /tmp/arm7tdmi_cosim_smoke_mame.cmd
 
@@ -258,6 +268,12 @@ cosim-mame-cm2005-arm-swap-smoke-rom:
 
 cosim-mame-cm2005-arm-block-smoke-rom:
 	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_arm_block_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms --placeholder-rom a29800uv.12b:0x100000 --placeholder-rom gal16v8.10a:0x40000 --placeholder-rom gal16v8.10b:0x40000
+
+cosim-mame-cm2005-arm-block-empty-smoke-rom:
+	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_arm_block_empty_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms --placeholder-rom a29800uv.12b:0x100000 --placeholder-rom gal16v8.10a:0x40000 --placeholder-rom gal16v8.10b:0x40000
+
+cosim-mame-cm2005-arm-block-user-smoke-rom:
+	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_arm_block_user_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms --placeholder-rom a29800uv.12b:0x100000 --placeholder-rom gal16v8.10a:0x40000 --placeholder-rom gal16v8.10b:0x40000
 
 tb-core-thumb-interwork:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_thumb_interwork $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_thumb_interwork.sv
