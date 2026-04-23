@@ -47,6 +47,8 @@ module tb_arm7tdmi_core_cosim_trace
   logic fiq_clear_on_reg_data_valid;
   logic [31:0] abort_on_fetch_addr;
   logic abort_on_fetch_addr_valid;
+  logic [31:0] abort_on_debug_pc;
+  logic abort_on_debug_pc_valid;
   integer mem_write_count;
   logic [31:0] last_mem_addr;
   logic [31:0] last_mem_data;
@@ -175,7 +177,8 @@ module tb_arm7tdmi_core_cosim_trace
     bus_abort = 1'b0;
 
     if (abort_on_fetch_addr_valid && bus_valid && !bus_write &&
-        bus_addr == abort_on_fetch_addr) begin
+        bus_addr == abort_on_fetch_addr &&
+        (!abort_on_debug_pc_valid || debug_pc == abort_on_debug_pc)) begin
       bus_abort = 1'b1;
     end
 
@@ -251,6 +254,7 @@ module tb_arm7tdmi_core_cosim_trace
     irq_clear_on_reg_data_valid = $value$plusargs("irq_clear_on_reg_data=%h", irq_clear_on_reg_data);
     fiq_clear_on_reg_data_valid = $value$plusargs("fiq_clear_on_reg_data=%h", fiq_clear_on_reg_data);
     abort_on_fetch_addr_valid = $value$plusargs("abort_on_fetch_addr=%h", abort_on_fetch_addr);
+    abort_on_debug_pc_valid = $value$plusargs("abort_on_debug_pc=%h", abort_on_debug_pc);
 
     $readmemh(memh_path, mem);
 
