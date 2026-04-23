@@ -38,9 +38,13 @@ module tb_arm7tdmi_core_cosim_trace
   integer irq_initial;
   integer fiq_initial;
   integer irq_raise_cycle;
+  integer fiq_raise_cycle;
   integer irq_clear_on_reg_addr;
+  integer fiq_clear_on_reg_addr;
   logic [31:0] irq_clear_on_reg_data;
+  logic [31:0] fiq_clear_on_reg_data;
   logic irq_clear_on_reg_data_valid;
+  logic fiq_clear_on_reg_data_valid;
   logic [31:0] abort_on_fetch_addr;
   logic abort_on_fetch_addr_valid;
   integer mem_write_count;
@@ -235,10 +239,17 @@ module tb_arm7tdmi_core_cosim_trace
     if (!$value$plusargs("irq_raise_cycle=%d", irq_raise_cycle)) begin
       irq_raise_cycle = -1;
     end
+    if (!$value$plusargs("fiq_raise_cycle=%d", fiq_raise_cycle)) begin
+      fiq_raise_cycle = -1;
+    end
     if (!$value$plusargs("irq_clear_on_reg_addr=%d", irq_clear_on_reg_addr)) begin
       irq_clear_on_reg_addr = -1;
     end
+    if (!$value$plusargs("fiq_clear_on_reg_addr=%d", fiq_clear_on_reg_addr)) begin
+      fiq_clear_on_reg_addr = -1;
+    end
     irq_clear_on_reg_data_valid = $value$plusargs("irq_clear_on_reg_data=%h", irq_clear_on_reg_data);
+    fiq_clear_on_reg_data_valid = $value$plusargs("fiq_clear_on_reg_data=%h", fiq_clear_on_reg_data);
     abort_on_fetch_addr_valid = $value$plusargs("abort_on_fetch_addr=%h", abort_on_fetch_addr);
 
     $readmemh(memh_path, mem);
@@ -284,6 +295,9 @@ module tb_arm7tdmi_core_cosim_trace
       if (irq_raise_cycle >= 0 && cycle_count == irq_raise_cycle) begin
         irq = 1'b1;
       end
+      if (fiq_raise_cycle >= 0 && cycle_count == fiq_raise_cycle) begin
+        fiq = 1'b1;
+      end
 
       if (unsupported) begin
         $fatal(1, "unsupported instruction at pc=%08x", debug_pc);
@@ -318,6 +332,11 @@ module tb_arm7tdmi_core_cosim_trace
           debug_reg_waddr == irq_clear_on_reg_addr[3:0] &&
           (!irq_clear_on_reg_data_valid || debug_reg_wdata == irq_clear_on_reg_data)) begin
         irq = 1'b0;
+      end
+      if (fiq && debug_reg_we && fiq_clear_on_reg_addr >= 0 &&
+          debug_reg_waddr == fiq_clear_on_reg_addr[3:0] &&
+          (!fiq_clear_on_reg_data_valid || debug_reg_wdata == fiq_clear_on_reg_data)) begin
+        fiq = 1'b0;
       end
 
       sampled_pc = debug_pc;
