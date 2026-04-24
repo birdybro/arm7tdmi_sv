@@ -22,6 +22,7 @@ RTL_FILES := rtl/arm7tdmi_pkg.sv \
 .PHONY: tb-core-thumb-bl-cycle-timing
 .PHONY: tb-core-cosim-arm-multiply-smoke
 .PHONY: tb-core-cosim-arm-psr-smoke
+.PHONY: tb-core-cosim-arm-interrupt-smoke
 
 lint:
 	$(VERILATOR) --lint-only $(VERILATOR_FLAGS) -f rtl/files.f
@@ -291,6 +292,11 @@ tb-core-cosim-arm-psr-smoke:
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_arm_psr_smoke.memh +trace=/tmp/arm7tdmi_cosim_arm_psr_smoke_rtl.jsonl +retired_limit=10 +max_cycles=220
 	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_arm_psr_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_arm_psr_smoke_ref.jsonl
 
+tb-core-cosim-arm-interrupt-smoke:
+	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_cosim_trace $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_cosim_trace.sv
+	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_arm_interrupt_smoke.memh +trace=/tmp/arm7tdmi_cosim_arm_interrupt_smoke_rtl.jsonl +retired_limit=5 +max_cycles=220 +irq_raise_cycle=1 +irq_clear_on_reg_addr=14 +irq_clear_on_reg_data=0000000c
+	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_arm_interrupt_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_arm_interrupt_smoke_ref.jsonl
+
 tb-core-cosim-arm-halfword-smoke:
 	$(VERILATOR) --binary $(VERILATOR_FLAGS) --top-module tb_arm7tdmi_core_cosim_trace $(RTL_FILES) sim/tb/sv/tb_arm7tdmi_core_cosim_trace.sv
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_arm_halfword_smoke.memh +trace=/tmp/arm7tdmi_cosim_arm_halfword_smoke_rtl.jsonl +retired_limit=8 +max_cycles=220
@@ -326,7 +332,7 @@ tb-core-cosim-arm-block-pc-restore-smoke:
 	./$(BUILD_DIR)/Vtb_arm7tdmi_core_cosim_trace +memh=sim/model/arm7tdmi_cosim_arm_block_pc_restore_smoke.memh +trace=/tmp/arm7tdmi_cosim_arm_block_pc_restore_smoke_rtl.jsonl +retired_limit=8 +max_cycles=260 +irq_raise_cycle=1 +irq_clear_on_reg_addr=14 +irq_clear_on_reg_data=10
 	python3 scripts/cosim/compare_arm7tdmi_traces.py --rtl /tmp/arm7tdmi_cosim_arm_block_pc_restore_smoke_rtl.jsonl --ref sim/model/arm7tdmi_cosim_arm_block_pc_restore_smoke_ref.jsonl
 
-tb-core-cosim-arm-smokes: tb-core-cosim-smoke tb-core-cosim-arm-swi-smoke tb-core-cosim-arm-undefined-smoke tb-core-cosim-arm-branch-smoke tb-core-cosim-arm-mem-smoke tb-core-cosim-arm-multiply-smoke tb-core-cosim-arm-psr-smoke tb-core-cosim-arm-halfword-smoke tb-core-cosim-arm-swap-smoke tb-core-cosim-arm-block-smoke tb-core-cosim-arm-block-empty-smoke tb-core-cosim-arm-block-user-smoke tb-core-cosim-arm-block-pc-smoke tb-core-cosim-arm-block-pc-restore-smoke
+tb-core-cosim-arm-smokes: tb-core-cosim-smoke tb-core-cosim-arm-swi-smoke tb-core-cosim-arm-undefined-smoke tb-core-cosim-arm-branch-smoke tb-core-cosim-arm-mem-smoke tb-core-cosim-arm-multiply-smoke tb-core-cosim-arm-psr-smoke tb-core-cosim-arm-interrupt-smoke tb-core-cosim-arm-halfword-smoke tb-core-cosim-arm-swap-smoke tb-core-cosim-arm-block-smoke tb-core-cosim-arm-block-empty-smoke tb-core-cosim-arm-block-user-smoke tb-core-cosim-arm-block-pc-smoke tb-core-cosim-arm-block-pc-restore-smoke
 
 tb-core-cosim-smokes: tb-core-cosim-arm-smokes tb-core-cosim-thumb-smokes
 
