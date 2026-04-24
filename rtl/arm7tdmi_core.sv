@@ -59,6 +59,7 @@ module arm7tdmi_core
     ST_BLOCK_PC_WB,
     ST_COPROC,
     ST_COPROC_MEM,
+    ST_COPROC_FINAL,
     ST_EXCEPTION_SAVE
   } state_t;
 
@@ -731,7 +732,8 @@ module arm7tdmi_core
                        ((((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_half_q) ? BUS_SIZE_HALF :
                         (((state_q == ST_FETCH) && thumb_state) ? BUS_SIZE_HALF : BUS_SIZE_WORD));
   assign bus_cycle_o = timing_internal_state ? BUS_CYCLE_INT :
-                       (((state_q == ST_COPROC) || (state_q == ST_COPROC_MEM)) ? BUS_CYCLE_COPROC :
+                       (((state_q == ST_COPROC) || (state_q == ST_COPROC_MEM) ||
+                         (state_q == ST_COPROC_FINAL)) ? BUS_CYCLE_COPROC :
                        ((state_q == ST_BLOCK_MEM) ? ((timing_model_en && !block_first_q) ?
                                                      BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ) :
                         ((state_q == ST_SWAP_WRITE) ? (timing_model_en ? BUS_CYCLE_SEQ :
@@ -1580,21 +1582,27 @@ module arm7tdmi_core
               coproc_data_q <= bus_rdata_i;
               state_q <= ST_COPROC;
             end else if (coproc_last_q) begin
-              if (coproc_wb_q) begin
-                reg_we    <= 1'b1;
-                reg_waddr <= coproc_rn_q;
-                reg_wdata <= coproc_wbdata_q;
-              end
-
-              retired_o <= 1'b1;
-              pc_q <= pc_q + 32'd4;
-              next_fetch_seq_q <= 1'b0;
-              state_q <= ST_FETCH;
+              // ARM7TDMI leaves one final coprocessor internal cycle after the
+              // last STC memory beat before resuming instruction fetch.
+              state_q <= ST_COPROC_FINAL;
             end else begin
               coproc_addr_q <= coproc_addr_next;
               state_q <= ST_COPROC;
             end
           end
+        end
+
+        ST_COPROC_FINAL: begin
+          if (coproc_wb_q) begin
+            reg_we    <= 1'b1;
+            reg_waddr <= coproc_rn_q;
+            reg_wdata <= coproc_wbdata_q;
+          end
+
+          retired_o <= 1'b1;
+          pc_q <= pc_q + 32'd4;
+          next_fetch_seq_q <= 1'b0;
+          state_q <= ST_FETCH;
         end
 
         ST_EXCEPTION_SAVE: begin
