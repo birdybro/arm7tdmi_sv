@@ -56,6 +56,15 @@ module arm7tdmi_arm_decode
       psr_write:         instr_i[21],
       psr_use_spsr:      instr_i[22],
       psr_field_mask:    instr_i[19:16],
+      cp_op:             COPROC_OP_NONE,
+      cp_num:            instr_i[11:8],
+      cp_opcode1:        instr_i[23:20],
+      cp_opcode2:        instr_i[7:5],
+      cp_crn:            instr_i[19:16],
+      cp_crd:            instr_i[15:12],
+      cp_crm:            instr_i[3:0],
+      cp_long:           instr_i[22],
+      cp_offset8:        instr_i[7:0],
       supported:         1'b0
     };
 
@@ -127,11 +136,21 @@ module arm7tdmi_arm_decode
 
       3'b110: begin
         decoded_o.op_class = ARM_OP_COPROCESSOR;
+        decoded_o.cp_op = instr_i[20] ? COPROC_OP_LDC : COPROC_OP_STC;
+        decoded_o.supported = instr_i[19:16] != 4'd15;
       end
 
       3'b111: begin
         decoded_o.op_class = instr_i[24] ? ARM_OP_SWI : ARM_OP_COPROCESSOR;
-        decoded_o.supported = instr_i[24];
+        if (instr_i[24]) begin
+          decoded_o.supported = 1'b1;
+        end else if (instr_i[4]) begin
+          decoded_o.cp_op = instr_i[20] ? COPROC_OP_MRC : COPROC_OP_MCR;
+          decoded_o.supported = instr_i[15:12] != 4'd15;
+        end else begin
+          decoded_o.cp_op = COPROC_OP_CDP;
+          decoded_o.supported = 1'b1;
+        end
       end
 
       default: begin

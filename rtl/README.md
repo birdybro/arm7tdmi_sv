@@ -153,6 +153,7 @@ The repository Makefile provides the current regression surface:
 - ARM long multiply `UMULL`, `UMLAL`, `SMULL`, and `SMLAL`.
 - ARM halfword transfer group: `LDRH`, `STRH`, `LDRSB`, and `LDRSH`, including immediate/register offsets and base writeback.
 - ARM PSR transfers: `MRS Rd, CPSR/SPSR` and register/immediate-form `MSR CPSR/SPSR_fields` byte-mask writes.
+- Generic ARM coprocessor execution path for `CDP`, `MCR`, `MRC`, `LDC`, and `STC` through an external coprocessor handshake, with undefined-instruction fallback when no coprocessor accepts the transaction.
 - ARM swap transfers: `SWP` and `SWPB`.
 - ARM block data transfer foundation: increment/decrement after/before `LDM`/`STM`, with optional writeback when `Rn` is not in the register list.
 - ARM empty-list block transfer behavior, modeled as an `r15` transfer over a 64-byte base span.
@@ -160,7 +161,7 @@ The repository Makefile provides the current regression surface:
 - ARM privileged block-transfer user-bank forms: `LDM/STM ...^` without `PC`.
 - ARM single data transfer foundation: immediate and scaled-register pre/post-indexed up/down word/byte `LDR`/`STR`, post-indexed `LDRT`/`STRT` and `LDRBT`/`STRBT`, PC-relative load/store forms without writeback, load/store writeback, word `LDR` to `PC`, and unaligned word-load rotation.
 - ARM SWI exception entry to the SVC vector with LR/SPSR save.
-- ARM undefined-instruction exception entry to the UND vector for undefined and coprocessor instruction classes.
+- ARM undefined-instruction exception entry to the UND vector for undefined instruction classes and unaccepted coprocessor instructions.
 - ARM IRQ and FIQ exception entry, with mask-bit checks and FIQ priority over IRQ.
 - ARM prefetch-abort exception entry from the bus abort signal.
 - ARM data-abort exception entry from the bus abort signal for data-memory, swap, and block-transfer transactions.

@@ -102,6 +102,15 @@ package arm7tdmi_pkg;
     ARM_OP_COPROCESSOR
   } arm_op_class_t;
 
+  typedef enum logic [2:0] {
+    COPROC_OP_NONE,
+    COPROC_OP_CDP,
+    COPROC_OP_MCR,
+    COPROC_OP_MRC,
+    COPROC_OP_LDC,
+    COPROC_OP_STC
+  } arm_coproc_op_t;
+
   typedef enum logic [4:0] {
     THUMB_OP_UNDEFINED,
     THUMB_OP_SHIFT_IMM,
@@ -183,6 +192,15 @@ package arm7tdmi_pkg;
     logic          psr_write;
     logic          psr_use_spsr;
     logic [3:0]    psr_field_mask;
+    arm_coproc_op_t cp_op;
+    logic [3:0]    cp_num;
+    logic [3:0]    cp_opcode1;
+    logic [2:0]    cp_opcode2;
+    logic [3:0]    cp_crn;
+    logic [3:0]    cp_crd;
+    logic [3:0]    cp_crm;
+    logic          cp_long;
+    logic [7:0]    cp_offset8;
     logic          supported;
   } arm_decoded_t;
 

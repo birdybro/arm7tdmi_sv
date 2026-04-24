@@ -21,6 +21,21 @@ module arm7tdmi_core
   input  logic           irq_i,
   input  logic           fiq_i,
 
+  output logic           coproc_valid_o,
+  output arm_coproc_op_t coproc_op_o,
+  output logic [3:0]     coproc_num_o,
+  output logic [3:0]     coproc_opcode1_o,
+  output logic [2:0]     coproc_opcode2_o,
+  output logic [3:0]     coproc_crn_o,
+  output logic [3:0]     coproc_crd_o,
+  output logic [3:0]     coproc_crm_o,
+  output logic           coproc_long_o,
+  output logic [31:0]    coproc_wdata_o,
+  input  logic           coproc_accept_i = 1'b0,
+  input  logic           coproc_ready_i = 1'b0,
+  input  logic [31:0]    coproc_rdata_i = 32'h0000_0000,
+  input  logic           coproc_last_i = 1'b1,
+
   output logic [31:0]    debug_pc_o,
   output logic [31:0]    debug_cpsr_o,
   output logic           debug_reg_we_o,
@@ -42,6 +57,8 @@ module arm7tdmi_core
     ST_BLOCK_MEM,
     ST_BLOCK_WB,
     ST_BLOCK_PC_WB,
+    ST_COPROC,
+    ST_COPROC_MEM,
     ST_EXCEPTION_SAVE
   } state_t;
 
@@ -80,6 +97,22 @@ module arm7tdmi_core
   logic [31:0] exception_spsr_q;
   logic [3:0]  mul64_hi_waddr_q;
   logic [31:0] mul64_hi_wdata_q;
+  arm_coproc_op_t coproc_op_q;
+  logic [3:0]  coproc_num_q;
+  logic [3:0]  coproc_opcode1_q;
+  logic [2:0]  coproc_opcode2_q;
+  logic [3:0]  coproc_crn_q;
+  logic [3:0]  coproc_crd_q;
+  logic [3:0]  coproc_crm_q;
+  logic        coproc_long_q;
+  logic [3:0]  coproc_arm_rd_q;
+  logic [3:0]  coproc_rn_q;
+  logic [31:0] coproc_addr_q;
+  logic [31:0] coproc_wbdata_q;
+  logic        coproc_wb_q;
+  logic        coproc_mem_to_cp_q;
+  logic        coproc_last_q;
+  logic [31:0] coproc_data_q;
 
   logic [3:0] rn;
   logic [3:0] rd;
@@ -166,6 +199,10 @@ module arm7tdmi_core
   logic [31:0] ls_offset;
   logic [31:0] ls_addr;
   logic [31:0] ls_transfer_addr;
+  logic [31:0] coproc_offset;
+  logic [31:0] coproc_addr;
+  logic [31:0] coproc_transfer_addr;
+  logic [31:0] coproc_addr_next;
   logic [31:0] hword_offset;
   logic [31:0] hword_addr;
   logic [31:0] hword_transfer_addr;
@@ -413,6 +450,10 @@ module arm7tdmi_core
     ls_offset             = decoded.immediate_operand ? shifted_rm : {20'h0, decoded.ls_offset12};
     ls_addr               = decoded.ls_up ? rn_data + ls_offset : rn_data - ls_offset;
     ls_transfer_addr      = decoded.ls_pre_index ? ls_addr : rn_data;
+    coproc_offset         = {22'h0, decoded.cp_offset8, 2'b00};
+    coproc_addr           = decoded.ls_up ? rn_data + coproc_offset : rn_data - coproc_offset;
+    coproc_transfer_addr  = decoded.ls_pre_index ? coproc_addr : rn_data;
+    coproc_addr_next      = decoded.ls_up ? (coproc_addr_q + 32'd4) : (coproc_addr_q - 32'd4);
     hword_offset          = decoded.hword_immediate_offset ? {24'h0, decoded.hword_offset8} : rm_data;
     hword_addr            = decoded.ls_up ? rn_data + hword_offset : rn_data - hword_offset;
     hword_transfer_addr   = decoded.ls_pre_index ? hword_addr : rn_data;
@@ -679,23 +720,38 @@ module arm7tdmi_core
   end
 
   assign bus_addr_o  = ((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
-                        (state_q == ST_BLOCK_MEM)) ? mem_addr_q : pc_q;
+                        (state_q == ST_BLOCK_MEM)) ? mem_addr_q :
+                       ((state_q == ST_COPROC_MEM) ? coproc_addr_q : pc_q);
   assign bus_valid_o = (state_q == ST_FETCH) || (state_q == ST_MEM) || (state_q == ST_SWAP_WRITE) ||
-                       (state_q == ST_BLOCK_MEM);
+                       (state_q == ST_BLOCK_MEM) || (state_q == ST_COPROC_MEM);
   assign bus_write_o = ((state_q == ST_MEM) && mem_write_q) || (state_q == ST_SWAP_WRITE) ||
-                       ((state_q == ST_BLOCK_MEM) && !block_load_q);
+                       ((state_q == ST_BLOCK_MEM) && !block_load_q) ||
+                       ((state_q == ST_COPROC_MEM) && !coproc_mem_to_cp_q);
   assign bus_size_o  = (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_byte_q) ? BUS_SIZE_BYTE :
                        ((((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) && mem_half_q) ? BUS_SIZE_HALF :
                         (((state_q == ST_FETCH) && thumb_state) ? BUS_SIZE_HALF : BUS_SIZE_WORD));
   assign bus_cycle_o = timing_internal_state ? BUS_CYCLE_INT :
+                       (((state_q == ST_COPROC) || (state_q == ST_COPROC_MEM)) ? BUS_CYCLE_COPROC :
                        ((state_q == ST_BLOCK_MEM) ? ((timing_model_en && !block_first_q) ?
                                                      BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ) :
                         ((state_q == ST_SWAP_WRITE) ? (timing_model_en ? BUS_CYCLE_SEQ :
                                                        BUS_CYCLE_NONSEQ) :
                          (((state_q == ST_MEM) ? BUS_CYCLE_NONSEQ :
-                           (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ)))));
+                           (next_fetch_seq_q ? BUS_CYCLE_SEQ : BUS_CYCLE_NONSEQ))))));
   assign bus_wdata_o = (state_q == ST_BLOCK_MEM) ? block_store_data :
-                       (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_wdata_q : 32'h0000_0000);
+                       (((state_q == ST_MEM) || (state_q == ST_SWAP_WRITE)) ? mem_wdata_q :
+                        ((state_q == ST_COPROC_MEM) ? coproc_data_q : 32'h0000_0000));
+
+  assign coproc_valid_o   = state_q == ST_COPROC;
+  assign coproc_op_o      = coproc_op_q;
+  assign coproc_num_o     = coproc_num_q;
+  assign coproc_opcode1_o = coproc_opcode1_q;
+  assign coproc_opcode2_o = coproc_opcode2_q;
+  assign coproc_crn_o     = coproc_crn_q;
+  assign coproc_crd_o     = coproc_crd_q;
+  assign coproc_crm_o     = coproc_crm_q;
+  assign coproc_long_o    = coproc_long_q;
+  assign coproc_wdata_o   = coproc_data_q;
 
   assign debug_pc_o   = pc_q;
   assign debug_cpsr_o = cpsr;
@@ -740,6 +796,22 @@ module arm7tdmi_core
       exception_spsr_q <= 32'h0000_0000;
       mul64_hi_waddr_q <= 4'h0;
       mul64_hi_wdata_q <= 32'h0000_0000;
+      coproc_op_q      <= COPROC_OP_NONE;
+      coproc_num_q     <= 4'h0;
+      coproc_opcode1_q <= 4'h0;
+      coproc_opcode2_q <= 3'h0;
+      coproc_crn_q     <= 4'h0;
+      coproc_crd_q     <= 4'h0;
+      coproc_crm_q     <= 4'h0;
+      coproc_long_q    <= 1'b0;
+      coproc_arm_rd_q  <= 4'h0;
+      coproc_rn_q      <= 4'h0;
+      coproc_addr_q    <= 32'h0000_0000;
+      coproc_wbdata_q  <= 32'h0000_0000;
+      coproc_wb_q      <= 1'b0;
+      coproc_mem_to_cp_q <= 1'b0;
+      coproc_last_q    <= 1'b0;
+      coproc_data_q    <= 32'h0000_0000;
       reg_we           <= 1'b0;
       reg_waddr        <= 4'h0;
       reg_wdata        <= 32'h0000_0000;
@@ -804,6 +876,7 @@ module arm7tdmi_core
                        (decoded.op_class != ARM_OP_HALFWORD_TRANSFER) &&
                        (decoded.op_class != ARM_OP_BLOCK_DATA_TRANSFER) &&
                        (decoded.op_class != ARM_OP_SWAP) &&
+                       (decoded.op_class != ARM_OP_COPROCESSOR) &&
                        (decoded.op_class != ARM_OP_SWI);
           state_q <= ST_FETCH;
 
@@ -1228,6 +1301,34 @@ module arm7tdmi_core
                                                 (rn_data - block_byte_count);
             block_first_q <= 1'b1;
             state_q <= ST_BLOCK_MEM;
+          end else if (decoded.op_class == ARM_OP_COPROCESSOR) begin
+            if (!coproc_accept_i) begin
+              exception_lr_q   <= pc_q + 32'd4;
+              exception_spsr_q <= cpsr;
+              cpsr_we          <= 1'b1;
+              cpsr_wdata       <= {cpsr[31:8], cpsr[7:6], 1'b0, MODE_UND};
+              pc_q             <= 32'h0000_0004;
+              next_fetch_seq_q <= 1'b0;
+              state_q          <= ST_EXCEPTION_SAVE;
+            end else begin
+              coproc_op_q      <= decoded.cp_op;
+              coproc_num_q     <= decoded.cp_num;
+              coproc_opcode1_q <= decoded.cp_opcode1;
+              coproc_opcode2_q <= decoded.cp_opcode2;
+              coproc_crn_q     <= decoded.cp_crn;
+              coproc_crd_q     <= decoded.cp_crd;
+              coproc_crm_q     <= decoded.cp_crm;
+              coproc_long_q    <= decoded.cp_long;
+              coproc_arm_rd_q  <= rd;
+              coproc_rn_q      <= rn;
+              coproc_addr_q    <= coproc_transfer_addr;
+              coproc_wbdata_q  <= coproc_addr;
+              coproc_wb_q      <= decoded.ls_writeback || !decoded.ls_pre_index;
+              coproc_mem_to_cp_q <= decoded.cp_op == COPROC_OP_LDC;
+              coproc_last_q    <= 1'b0;
+              coproc_data_q    <= rd_data;
+              state_q          <= (decoded.cp_op == COPROC_OP_LDC) ? ST_COPROC_MEM : ST_COPROC;
+            end
           end else if (decoded.op_class == ARM_OP_SWI) begin
             exception_lr_q   <= pc_q + 32'd4;
             exception_spsr_q <= cpsr;
@@ -1236,8 +1337,7 @@ module arm7tdmi_core
             pc_q             <= 32'h0000_0008;
             next_fetch_seq_q <= 1'b0;
             state_q          <= ST_EXCEPTION_SAVE;
-          end else if ((decoded.op_class == ARM_OP_UNDEFINED) ||
-                       (decoded.op_class == ARM_OP_COPROCESSOR)) begin
+          end else if (decoded.op_class == ARM_OP_UNDEFINED) begin
             exception_lr_q   <= pc_q + 32'd4;
             exception_spsr_q <= cpsr;
             cpsr_we          <= 1'b1;
@@ -1423,6 +1523,78 @@ module arm7tdmi_core
           pc_q <= block_pc_wdata_q;
           next_fetch_seq_q <= 1'b0;
           state_q <= ST_FETCH;
+        end
+
+        ST_COPROC: begin
+          if (coproc_ready_i) begin
+            if (coproc_op_q == COPROC_OP_MRC) begin
+              reg_we    <= 1'b1;
+              reg_waddr <= coproc_arm_rd_q;
+              reg_wdata <= coproc_rdata_i;
+
+              retired_o <= 1'b1;
+              pc_q <= pc_q + 32'd4;
+              next_fetch_seq_q <= 1'b0;
+              state_q <= ST_FETCH;
+            end else if (coproc_op_q == COPROC_OP_STC) begin
+              coproc_data_q <= coproc_rdata_i;
+              coproc_last_q <= coproc_last_i;
+              state_q <= ST_COPROC_MEM;
+            end else if (coproc_op_q inside {COPROC_OP_CDP, COPROC_OP_MCR, COPROC_OP_LDC}) begin
+              if ((coproc_op_q == COPROC_OP_LDC) && !coproc_last_i) begin
+                coproc_addr_q <= coproc_addr_next;
+                state_q <= ST_COPROC_MEM;
+              end else begin
+                if (coproc_wb_q) begin
+                  reg_we    <= 1'b1;
+                  reg_waddr <= coproc_rn_q;
+                  reg_wdata <= coproc_wbdata_q;
+                end
+
+                retired_o <= 1'b1;
+                pc_q <= pc_q + 32'd4;
+                next_fetch_seq_q <= 1'b0;
+                state_q <= ST_FETCH;
+              end
+            end
+          end
+        end
+
+        ST_COPROC_MEM: begin
+          if (bus_ready_i) begin
+            if (bus_abort_i) begin
+              if (coproc_wb_q) begin
+                reg_we    <= 1'b1;
+                reg_waddr <= coproc_rn_q;
+                reg_wdata <= coproc_wbdata_q;
+              end
+
+              exception_lr_q   <= pc_q + 32'd8;
+              exception_spsr_q <= cpsr;
+              cpsr_we          <= 1'b1;
+              cpsr_wdata       <= {cpsr[31:8], 1'b1, cpsr[6], 1'b0, MODE_ABT};
+              pc_q             <= 32'h0000_0010;
+              next_fetch_seq_q <= 1'b0;
+              state_q          <= ST_EXCEPTION_SAVE;
+            end else if (coproc_mem_to_cp_q) begin
+              coproc_data_q <= bus_rdata_i;
+              state_q <= ST_COPROC;
+            end else if (coproc_last_q) begin
+              if (coproc_wb_q) begin
+                reg_we    <= 1'b1;
+                reg_waddr <= coproc_rn_q;
+                reg_wdata <= coproc_wbdata_q;
+              end
+
+              retired_o <= 1'b1;
+              pc_q <= pc_q + 32'd4;
+              next_fetch_seq_q <= 1'b0;
+              state_q <= ST_FETCH;
+            end else begin
+              coproc_addr_q <= coproc_addr_next;
+              state_q <= ST_COPROC;
+            end
+          end
         end
 
         ST_EXCEPTION_SAVE: begin
