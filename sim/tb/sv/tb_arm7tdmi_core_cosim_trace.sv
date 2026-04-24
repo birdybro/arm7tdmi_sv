@@ -27,8 +27,27 @@ module tb_arm7tdmi_core_cosim_trace
   logic irq;
   logic fiq;
   logic bus_abort;
+  logic coproc_dummy_enable;
+  logic coproc_valid;
+  arm_coproc_op_t coproc_op;
+  /* verilator lint_off UNUSEDSIGNAL */
+  logic [3:0] coproc_num;
+  logic [3:0] coproc_opcode1;
+  logic [2:0] coproc_opcode2;
+  logic [3:0] coproc_crn;
+  logic [3:0] coproc_crd;
+  logic [3:0] coproc_crm;
+  /* verilator lint_on UNUSEDSIGNAL */
+  logic coproc_long;
+  logic [31:0] coproc_wdata;
+  logic coproc_accept;
+  logic coproc_ready;
+  logic [31:0] coproc_rdata;
+  logic coproc_last;
 
   logic [7:0] mem [0:MEM_BYTES-1];
+  logic [31:0] cp_regs [0:15];
+  logic [1:0] coproc_transfer_index;
 
   integer trace_fd;
   integer retired_count;
@@ -87,6 +106,20 @@ module tb_arm7tdmi_core_cosim_trace
     .bus_abort_i(bus_abort),
     .irq_i(irq),
     .fiq_i(fiq),
+    .coproc_valid_o(coproc_valid),
+    .coproc_op_o(coproc_op),
+    .coproc_num_o(coproc_num),
+    .coproc_opcode1_o(coproc_opcode1),
+    .coproc_opcode2_o(coproc_opcode2),
+    .coproc_crn_o(coproc_crn),
+    .coproc_crd_o(coproc_crd),
+    .coproc_crm_o(coproc_crm),
+    .coproc_long_o(coproc_long),
+    .coproc_wdata_o(coproc_wdata),
+    .coproc_accept_i(coproc_accept),
+    .coproc_ready_i(coproc_ready),
+    .coproc_rdata_i(coproc_rdata),
+    .coproc_last_i(coproc_last),
     .debug_pc_o(debug_pc),
     .debug_cpsr_o(debug_cpsr),
     .debug_reg_we_o(debug_reg_we),
@@ -200,6 +233,36 @@ module tb_arm7tdmi_core_cosim_trace
     end
   end
 
+  always_comb begin
+    coproc_accept = 1'b0;
+    coproc_ready = 1'b0;
+    coproc_rdata = 32'h0000_0000;
+    coproc_last = 1'b1;
+
+    if (coproc_dummy_enable) begin
+      coproc_accept = 1'b1;
+      coproc_ready = coproc_valid;
+
+      unique case (coproc_op)
+        COPROC_OP_MRC: begin
+          coproc_rdata = cp_regs[coproc_crn];
+        end
+
+        COPROC_OP_LDC: begin
+          coproc_last = !coproc_long || (coproc_transfer_index == 2'd1);
+        end
+
+        COPROC_OP_STC: begin
+          coproc_rdata = cp_regs[coproc_crd + {2'b00, coproc_transfer_index}];
+          coproc_last = !coproc_long || (coproc_transfer_index == 2'd1);
+        end
+
+        default: begin
+        end
+      endcase
+    end
+  end
+
   always_ff @(posedge clk) begin
     if (bus_valid && bus_ready && bus_write && !bus_abort) begin
       last_mem_addr <= bus_addr;
@@ -220,6 +283,33 @@ module tb_arm7tdmi_core_cosim_trace
           mem[(bus_addr + 32'd3) & 32'h0000_FFFF] <= bus_wdata[31:24];
         end
       endcase
+    end
+  end
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      coproc_transfer_index <= 2'd0;
+      for (int idx = 0; idx < 16; idx++) begin
+        cp_regs[idx] <= 32'h0000_0000;
+      end
+    end else if (coproc_dummy_enable && coproc_valid && coproc_accept && coproc_ready) begin
+      unique case (coproc_op)
+        COPROC_OP_MCR: cp_regs[coproc_crn] <= coproc_wdata;
+        COPROC_OP_CDP: cp_regs[coproc_crd] <= cp_regs[coproc_crn] + {28'h0, coproc_opcode1};
+        COPROC_OP_LDC: cp_regs[coproc_crd + {2'b00, coproc_transfer_index}] <= coproc_wdata;
+        default: begin
+        end
+      endcase
+
+      if (coproc_op inside {COPROC_OP_LDC, COPROC_OP_STC}) begin
+        if (coproc_last) begin
+          coproc_transfer_index <= 2'd0;
+        end else begin
+          coproc_transfer_index <= coproc_transfer_index + 2'd1;
+        end
+      end else begin
+        coproc_transfer_index <= 2'd0;
+      end
     end
   end
 
@@ -258,6 +348,7 @@ module tb_arm7tdmi_core_cosim_trace
     if (!$value$plusargs("fiq_clear_on_reg_addr=%d", fiq_clear_on_reg_addr)) begin
       fiq_clear_on_reg_addr = -1;
     end
+    coproc_dummy_enable = $test$plusargs("coproc_dummy");
     irq_clear_on_reg_data_valid = $value$plusargs("irq_clear_on_reg_data=%h", irq_clear_on_reg_data);
     fiq_clear_on_reg_data_valid = $value$plusargs("fiq_clear_on_reg_data=%h", fiq_clear_on_reg_data);
     abort_on_fetch_addr_valid = $value$plusargs("abort_on_fetch_addr=%h", abort_on_fetch_addr);

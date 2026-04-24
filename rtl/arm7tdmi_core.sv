@@ -1325,7 +1325,8 @@ module arm7tdmi_core
               coproc_rn_q      <= rn;
               coproc_addr_q    <= coproc_transfer_addr;
               coproc_wbdata_q  <= coproc_addr;
-              coproc_wb_q      <= decoded.ls_writeback || !decoded.ls_pre_index;
+              coproc_wb_q      <= (decoded.cp_op inside {COPROC_OP_LDC, COPROC_OP_STC}) &&
+                                  (decoded.ls_writeback || !decoded.ls_pre_index);
               coproc_mem_to_cp_q <= decoded.cp_op == COPROC_OP_LDC;
               coproc_last_q    <= 1'b0;
               coproc_data_q    <= rd_data;
