@@ -88,6 +88,7 @@ module tb_arm7tdmi_core_cosim_trace
   arm_bus_size_t pending_mem_size;
   logic [31:0] sampled_pc;
   logic sampled_thumb;
+  logic allow_unsupported;
 
   string memh_path;
   string trace_path;
@@ -354,6 +355,7 @@ module tb_arm7tdmi_core_cosim_trace
     abort_on_fetch_addr_valid = $value$plusargs("abort_on_fetch_addr=%h", abort_on_fetch_addr);
     abort_on_write_addr_valid = $value$plusargs("abort_on_write_addr=%h", abort_on_write_addr);
     abort_on_debug_pc_valid = $value$plusargs("abort_on_debug_pc=%h", abort_on_debug_pc);
+    allow_unsupported = $test$plusargs("allow_unsupported");
 
     $readmemh(memh_path, mem);
 
@@ -402,24 +404,20 @@ module tb_arm7tdmi_core_cosim_trace
         fiq = 1'b1;
       end
 
-      if (unsupported) begin
-        $fatal(1, "unsupported instruction at pc=%08x", debug_pc);
-      end
-
       if (pending_log) begin
         log_retire();
         retired_count = retired_count + 1;
         pending_log = 1'b0;
       end
 
-      if (retired) begin
+      if (retired || (allow_unsupported && unsupported)) begin
         pending_pc = sampled_pc;
         pending_cpsr = debug_cpsr;
         pending_thumb = debug_cpsr[5];
         pending_insn = sampled_thumb ? {16'h0000, read16(sampled_pc)} : read32(sampled_pc);
-        pending_reg_we = debug_reg_we;
-        pending_reg_waddr = debug_reg_waddr;
-        pending_reg_wdata = debug_reg_wdata;
+        pending_reg_we = retired ? debug_reg_we : 1'b0;
+        pending_reg_waddr = retired ? debug_reg_waddr : 4'd0;
+        pending_reg_wdata = retired ? debug_reg_wdata : 32'h0000_0000;
         pending_mem_write_count = mem_write_count;
         pending_mem_addr = last_mem_addr;
         pending_mem_data = last_mem_data;
@@ -429,6 +427,10 @@ module tb_arm7tdmi_core_cosim_trace
         last_mem_addr = 32'h0000_0000;
         last_mem_data = 32'h0000_0000;
         last_mem_size = BUS_SIZE_WORD;
+      end
+
+      if (unsupported && !allow_unsupported) begin
+        $fatal(1, "unsupported instruction at pc=%08x", debug_pc);
       end
 
       if (irq && debug_reg_we && irq_clear_on_reg_addr >= 0 &&
