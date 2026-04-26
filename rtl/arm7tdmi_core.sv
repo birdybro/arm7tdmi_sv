@@ -1142,6 +1142,10 @@ module arm7tdmi_core
           end else if (!cond_pass) begin
             pc_q <= pc_q + 32'd4;
             next_fetch_seq_q <= 1'b1;
+          end else if (!decoded.supported) begin
+            unsupported_o <= 1'b1;
+            pc_q <= pc_q + 32'd4;
+            next_fetch_seq_q <= 1'b1;
           end else if (decoded.op_class == ARM_OP_DATA_PROCESSING) begin
             if (alu_write_result) begin
               if (rd == 4'd15) begin
