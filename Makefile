@@ -448,6 +448,9 @@ cosim-mame-cm2005-thumb-unsupported-smoke-rom:
 cosim-mame-cm2005-arm-undefined-smoke-rom:
 	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_arm_undefined_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms --placeholder-rom a29800uv.12b:0x100000 --placeholder-rom gal16v8.10a:0x40000 --placeholder-rom gal16v8.10b:0x40000
 
+cosim-mame-cm2005-arm-unsupported-smoke-rom:
+	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_arm_unsupported_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms --placeholder-rom a29800uv.12b:0x100000 --placeholder-rom gal16v8.10a:0x40000 --placeholder-rom gal16v8.10b:0x40000
+
 cosim-mame-cm2005-arm-branch-smoke-rom:
 	python3 scripts/cosim/prepare_mame_rom_set.py --memh sim/model/arm7tdmi_cosim_arm_branch_smoke.memh --set-name cm2005 --rom-name a29800uv.11b --rom-size 0x100000 --output-root /tmp/arm7tdmi_mame_roms --placeholder-rom a29800uv.12b:0x100000 --placeholder-rom gal16v8.10a:0x40000 --placeholder-rom gal16v8.10b:0x40000
 
