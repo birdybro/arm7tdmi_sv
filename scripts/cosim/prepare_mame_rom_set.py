@@ -25,6 +25,17 @@ def load_memh_bytes(path: Path) -> bytes:
         line = raw_line.split("//", 1)[0].strip()
         if not line:
             continue
+        if line.startswith("@"):
+            try:
+                addr = int(line[1:], 16)
+            except ValueError as exc:
+                raise SystemExit(f"{path}:{lineno}: invalid memh address marker '{raw_line}'") from exc
+            if addr < len(data):
+                raise SystemExit(
+                    f"{path}:{lineno}: address marker 0x{addr:x} moves backwards from {len(data)}"
+                )
+            data.extend(b"\x00" * (addr - len(data)))
+            continue
         token = line.lower().removeprefix("0x")
         if len(token) != 2:
             raise SystemExit(
