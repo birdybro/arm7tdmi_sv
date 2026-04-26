@@ -4,7 +4,9 @@ module tb_arm7tdmi_arm_decode
   import arm7tdmi_pkg::*;
 ;
   logic [31:0] instr;
+  /* verilator lint_off UNUSEDSIGNAL */
   arm_decoded_t decoded;
+  /* verilator lint_on UNUSEDSIGNAL */
 
   arm7tdmi_arm_decode dut (
     .instr_i(instr),
@@ -365,6 +367,9 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "SWPB decode mismatch");
     end
 
+    decode(32'hE100_F091); // SWP pc, r1, [r0]
+    expect_class(ARM_OP_SWAP, 1'b0);
+
     decode(32'hE1C0_10B2); // STRH r1, [r0, #2]
     expect_class(ARM_OP_HALFWORD_TRANSFER, 1'b1);
     if (!decoded.ls_pre_index || !decoded.ls_up || decoded.ls_load ||
@@ -424,6 +429,9 @@ module tb_arm7tdmi_arm_decode
     if (decoded.rd !== 4'd0 || decoded.psr_write || decoded.psr_use_spsr) begin
       $fatal(1, "MRS CPSR decode mismatch");
     end
+
+    decode(32'hE10F_F000); // MRS pc, CPSR
+    expect_class(ARM_OP_PSR_TRANSFER, 1'b0);
 
     decode(32'hE128_F001); // MSR CPSR_f, r1
     expect_class(ARM_OP_PSR_TRANSFER, 1'b1);
