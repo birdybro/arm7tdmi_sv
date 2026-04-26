@@ -456,6 +456,57 @@ module tb_arm7tdmi_arm_decode
       $fatal(1, "MSR CPSR_c immediate decode mismatch");
     end
 
+    decode(32'hEE01_0210); // MCR p2, 0, r0, c1, c0, 0
+    expect_class(ARM_OP_COPROCESSOR, 1'b1);
+    if (decoded.cp_op !== COPROC_OP_MCR || decoded.cp_num !== 4'd2 ||
+        decoded.cp_crn !== 4'd1 || decoded.cp_crd !== 4'd0 ||
+        decoded.cp_crm !== 4'd0 || decoded.cp_opcode1 !== 4'd0 ||
+        decoded.cp_opcode2 !== 3'd0) begin
+      $fatal(1, "MCR decode mismatch");
+    end
+
+    decode(32'hEE11_1210); // MRC p2, 0, r1, c1, c0, 0
+    expect_class(ARM_OP_COPROCESSOR, 1'b1);
+    if (decoded.cp_op !== COPROC_OP_MRC || decoded.cp_num !== 4'd2 ||
+        decoded.cp_crn !== 4'd1 || decoded.cp_crd !== 4'd1 ||
+        decoded.cp_crm !== 4'd0 || decoded.cp_opcode1 !== 4'd1 ||
+        decoded.cp_opcode2 !== 3'd0) begin
+      $fatal(1, "MRC decode mismatch");
+    end
+
+    decode(32'hEE11_F210); // MRC p2, 0, pc, c1, c0, 0
+    expect_class(ARM_OP_COPROCESSOR, 1'b0);
+
+    decode(32'hEE11_3200); // CDP p2, 1, c3, c1, c0, 0
+    expect_class(ARM_OP_COPROCESSOR, 1'b1);
+    if (decoded.cp_op !== COPROC_OP_CDP || decoded.cp_num !== 4'd2 ||
+        decoded.cp_crn !== 4'd1 || decoded.cp_crd !== 4'd3 ||
+        decoded.cp_crm !== 4'd0 || decoded.cp_opcode1 !== 4'd1 ||
+        decoded.cp_opcode2 !== 3'd0) begin
+      $fatal(1, "CDP decode mismatch");
+    end
+
+    decode(32'hECD0_4202); // LDC p2, c4, [r0], #8
+    expect_class(ARM_OP_COPROCESSOR, 1'b1);
+    if (decoded.cp_op !== COPROC_OP_LDC || decoded.cp_num !== 4'd2 ||
+        decoded.cp_crd !== 4'd4 || decoded.rn !== 4'd0 || decoded.cp_offset8 !== 8'h02 ||
+        decoded.ls_pre_index || decoded.ls_writeback || !decoded.ls_load ||
+        !decoded.cp_long) begin
+      $fatal(1, "LDC decode mismatch");
+    end
+
+    decode(32'hECDF_4202); // LDC p2, c4, [pc], #8
+    expect_class(ARM_OP_COPROCESSOR, 1'b0);
+
+    decode(32'hECC0_4202); // STC p2, c4, [r0], #8
+    expect_class(ARM_OP_COPROCESSOR, 1'b1);
+    if (decoded.cp_op !== COPROC_OP_STC || decoded.cp_num !== 4'd2 ||
+        decoded.cp_crd !== 4'd4 || decoded.rn !== 4'd0 || decoded.cp_offset8 !== 8'h02 ||
+        decoded.ls_pre_index || decoded.ls_writeback || decoded.ls_load ||
+        !decoded.cp_long) begin
+      $fatal(1, "STC decode mismatch");
+    end
+
     decode(32'hEF00_0011); // SWI
     expect_class(ARM_OP_SWI, 1'b1);
 
