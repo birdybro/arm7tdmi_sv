@@ -31,6 +31,14 @@ module tb_arm7tdmi_core_multiply_edge_cycle_timing
   int fetch_20;
   int fetch_24;
   int fetch_28;
+  arm_bus_cycle_t cycle_08;
+  arm_bus_cycle_t cycle_0c;
+  arm_bus_cycle_t cycle_10;
+  arm_bus_cycle_t cycle_14;
+  arm_bus_cycle_t cycle_18;
+  arm_bus_cycle_t cycle_1c;
+  arm_bus_cycle_t cycle_20;
+  arm_bus_cycle_t cycle_24;
   int r4_seen;
   int r5_seen;
   int r6_seen;
@@ -93,6 +101,14 @@ module tb_arm7tdmi_core_multiply_edge_cycle_timing
     fetch_20 = -1;
     fetch_24 = -1;
     fetch_28 = -1;
+    cycle_08 = BUS_CYCLE_INT;
+    cycle_0c = BUS_CYCLE_INT;
+    cycle_10 = BUS_CYCLE_INT;
+    cycle_14 = BUS_CYCLE_INT;
+    cycle_18 = BUS_CYCLE_INT;
+    cycle_1c = BUS_CYCLE_INT;
+    cycle_20 = BUS_CYCLE_INT;
+    cycle_24 = BUS_CYCLE_INT;
     r4_seen = 0;
     r5_seen = 0;
     r6_seen = 0;
@@ -124,14 +140,42 @@ module tb_arm7tdmi_core_multiply_edge_cycle_timing
         end
 
         unique case (bus_addr)
-          32'h0000_0008: if (fetch_08 < 0) fetch_08 = sim_cycle;
-          32'h0000_000C: if (fetch_0c < 0) fetch_0c = sim_cycle;
-          32'h0000_0010: if (fetch_10 < 0) fetch_10 = sim_cycle;
-          32'h0000_0014: if (fetch_14 < 0) fetch_14 = sim_cycle;
-          32'h0000_0018: if (fetch_18 < 0) fetch_18 = sim_cycle;
-          32'h0000_001C: if (fetch_1c < 0) fetch_1c = sim_cycle;
-          32'h0000_0020: if (fetch_20 < 0) fetch_20 = sim_cycle;
-          32'h0000_0024: if (fetch_24 < 0) fetch_24 = sim_cycle;
+          32'h0000_0000: begin
+          end
+          32'h0000_0004: begin
+          end
+          32'h0000_0008: if (fetch_08 < 0) begin
+            fetch_08 = sim_cycle;
+            cycle_08 = bus_cycle;
+          end
+          32'h0000_000C: if (fetch_0c < 0) begin
+            fetch_0c = sim_cycle;
+            cycle_0c = bus_cycle;
+          end
+          32'h0000_0010: if (fetch_10 < 0) begin
+            fetch_10 = sim_cycle;
+            cycle_10 = bus_cycle;
+          end
+          32'h0000_0014: if (fetch_14 < 0) begin
+            fetch_14 = sim_cycle;
+            cycle_14 = bus_cycle;
+          end
+          32'h0000_0018: if (fetch_18 < 0) begin
+            fetch_18 = sim_cycle;
+            cycle_18 = bus_cycle;
+          end
+          32'h0000_001C: if (fetch_1c < 0) begin
+            fetch_1c = sim_cycle;
+            cycle_1c = bus_cycle;
+          end
+          32'h0000_0020: if (fetch_20 < 0) begin
+            fetch_20 = sim_cycle;
+            cycle_20 = bus_cycle;
+          end
+          32'h0000_0024: if (fetch_24 < 0) begin
+            fetch_24 = sim_cycle;
+            cycle_24 = bus_cycle;
+          end
           32'h0000_0028: if (fetch_28 < 0) fetch_28 = sim_cycle;
           default: begin
           end
@@ -158,7 +202,8 @@ module tb_arm7tdmi_core_multiply_edge_cycle_timing
 
     if (fetch_08 < 0 || fetch_0c < 0 || fetch_10 < 0 || fetch_14 < 0 ||
         fetch_18 < 0 || fetch_1c < 0 || fetch_20 < 0 || fetch_24 < 0) begin
-      $fatal(1, "missing multiply edge timing fetch timestamps");
+      $fatal(1, "missing multiply edge timing fetch timestamps 08=%0d 0c=%0d 10=%0d 14=%0d 18=%0d 1c=%0d 20=%0d 24=%0d",
+             fetch_08, fetch_0c, fetch_10, fetch_14, fetch_18, fetch_1c, fetch_20, fetch_24);
     end
 
     if ((fetch_0c - fetch_08) != 3 || (fetch_14 - fetch_10) != 4 ||
@@ -166,6 +211,13 @@ module tb_arm7tdmi_core_multiply_edge_cycle_timing
       $fatal(1, "unexpected multiply edge fetch spacing %0d %0d %0d %0d",
              fetch_0c - fetch_08, fetch_14 - fetch_10,
              fetch_1c - fetch_18, fetch_24 - fetch_20);
+    end
+    if ((cycle_08 != BUS_CYCLE_SEQ) || (cycle_0c != BUS_CYCLE_SEQ) ||
+        (cycle_10 != BUS_CYCLE_SEQ) || (cycle_14 != BUS_CYCLE_SEQ) ||
+        (cycle_18 != BUS_CYCLE_SEQ) || (cycle_1c != BUS_CYCLE_SEQ) ||
+        (cycle_20 != BUS_CYCLE_SEQ) || (cycle_24 != BUS_CYCLE_SEQ)) begin
+      $fatal(1, "unexpected multiply-edge follow-on fetch cycle classes 08=%0d 0c=%0d 10=%0d 14=%0d 18=%0d 1c=%0d 20=%0d 24=%0d",
+             cycle_08, cycle_0c, cycle_10, cycle_14, cycle_18, cycle_1c, cycle_20, cycle_24);
     end
 
     if (r4_seen != 1 || r5_seen != 1 || r6_seen != 1 || r7_seen != 1) begin

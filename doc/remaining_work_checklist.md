@@ -71,7 +71,7 @@ Status labels:
 
 ### 2.3 Timing signoff work
 - `[ ]` Build instruction-family timing matrix with expected fetch spacing / internal cycles / writeback timing
-- `[ ]` Add explicit checks for sequential vs non-sequential bus transitions where still missing
+- `[~]` Add explicit checks for sequential vs non-sequential bus transitions where still missing
 - `[ ]` Expand wait-state timing coverage for stalled fetch and stalled exception redirects
 - `[~]` Review multiply timing against ARM7TDMI reference behavior for edge multiplier values
 
@@ -121,4 +121,4 @@ Near-term highest-value path:
 ## 8. Next Item
 
 Current next item:
-- `[~]` Add ARM multiply edge-value cycle-timing coverage and reconcile it with the ARM7TDMI reference timing model
+- `[~]` Expand explicit fetch cycle-class checks across remaining timing benches and compare multiply timing against ARM7TDMI reference behavior
