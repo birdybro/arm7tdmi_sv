@@ -67,7 +67,7 @@ Status labels:
 - `[x]` Register-offset load/store timing smoke
 - `[x]` SP-relative load/store timing smoke
 - `[x]` Address-generation timing smoke
-- `[ ]` SP-adjust timing smoke
+- `[x]` SP-adjust timing smoke
 
 ### 2.3 Timing signoff work
 - `[ ]` Build instruction-family timing matrix with expected fetch spacing / internal cycles / writeback timing
