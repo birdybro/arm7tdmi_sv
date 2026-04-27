@@ -29,6 +29,12 @@ module tb_arm7tdmi_core_thumb_cycle_timing
   int fetch_2a;
   int fetch_2c;
   int int_cycles_seen;
+  arm_bus_cycle_t cycle_22;
+  arm_bus_cycle_t cycle_24;
+  arm_bus_cycle_t cycle_26;
+  arm_bus_cycle_t cycle_28;
+  arm_bus_cycle_t cycle_2a;
+  arm_bus_cycle_t cycle_2c;
   int r0_mov_seen;
   int r0_mul_seen;
   int r1_seen;
@@ -89,6 +95,12 @@ module tb_arm7tdmi_core_thumb_cycle_timing
     fetch_2a = -1;
     fetch_2c = -1;
     int_cycles_seen = 0;
+    cycle_22 = BUS_CYCLE_INT;
+    cycle_24 = BUS_CYCLE_INT;
+    cycle_26 = BUS_CYCLE_INT;
+    cycle_28 = BUS_CYCLE_INT;
+    cycle_2a = BUS_CYCLE_INT;
+    cycle_2c = BUS_CYCLE_INT;
     r0_mov_seen = 0;
     r0_mul_seen = 0;
     r1_seen = 0;
@@ -122,12 +134,30 @@ module tb_arm7tdmi_core_thumb_cycle_timing
         end
 
         unique case (bus_addr)
-          32'h0000_0022: if (fetch_22 < 0) fetch_22 = sim_cycle;
-          32'h0000_0024: if (fetch_24 < 0) fetch_24 = sim_cycle;
-          32'h0000_0026: if (fetch_26 < 0) fetch_26 = sim_cycle;
-          32'h0000_0028: if (fetch_28 < 0) fetch_28 = sim_cycle;
-          32'h0000_002A: if (fetch_2a < 0) fetch_2a = sim_cycle;
-          32'h0000_002C: if (fetch_2c < 0) fetch_2c = sim_cycle;
+          32'h0000_0022: if (fetch_22 < 0) begin
+            fetch_22 = sim_cycle;
+            cycle_22 = bus_cycle;
+          end
+          32'h0000_0024: if (fetch_24 < 0) begin
+            fetch_24 = sim_cycle;
+            cycle_24 = bus_cycle;
+          end
+          32'h0000_0026: if (fetch_26 < 0) begin
+            fetch_26 = sim_cycle;
+            cycle_26 = bus_cycle;
+          end
+          32'h0000_0028: if (fetch_28 < 0) begin
+            fetch_28 = sim_cycle;
+            cycle_28 = bus_cycle;
+          end
+          32'h0000_002A: if (fetch_2a < 0) begin
+            fetch_2a = sim_cycle;
+            cycle_2a = bus_cycle;
+          end
+          32'h0000_002C: if (fetch_2c < 0) begin
+            fetch_2c = sim_cycle;
+            cycle_2c = bus_cycle;
+          end
           default: begin
           end
         endcase
@@ -167,6 +197,12 @@ module tb_arm7tdmi_core_thumb_cycle_timing
 
     if ((fetch_24 - fetch_22) != 2) begin
       $fatal(1, "plain Thumb MOV should fetch every 2 cycles, saw %0d", fetch_24 - fetch_22);
+    end
+    if ((cycle_22 != BUS_CYCLE_SEQ) || (cycle_24 != BUS_CYCLE_SEQ) ||
+        (cycle_26 != BUS_CYCLE_SEQ) || (cycle_28 != BUS_CYCLE_SEQ) ||
+        (cycle_2a != BUS_CYCLE_SEQ) || (cycle_2c != BUS_CYCLE_SEQ)) begin
+      $fatal(1, "unexpected Thumb follow-on fetch cycle classes 22=%0d 24=%0d 26=%0d 28=%0d 2a=%0d 2c=%0d",
+             cycle_22, cycle_24, cycle_26, cycle_28, cycle_2a, cycle_2c);
     end
 
     if ((fetch_28 - fetch_26) != 3) begin
