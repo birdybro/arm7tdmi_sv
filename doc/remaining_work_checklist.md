@@ -66,7 +66,7 @@ Status labels:
 - `[x]` Conditional branch timing smoke
 - `[x]` Register-offset load/store timing smoke
 - `[x]` SP-relative load/store timing smoke
-- `[ ]` Address-generation timing smoke
+- `[x]` Address-generation timing smoke
 - `[ ]` SP-adjust timing smoke
 
 ### 2.3 Timing signoff work
