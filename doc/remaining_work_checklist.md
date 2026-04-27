@@ -63,7 +63,7 @@ Status labels:
 - `[x]` Block wait timing smoke
 - `[x]` Stack timing smoke
 - `[x]` PC-relative load timing smoke
-- `[ ]` Conditional branch timing smoke
+- `[x]` Conditional branch timing smoke
 - `[ ]` Register-offset load/store timing smoke
 - `[ ]` SP-relative load/store timing smoke
 - `[ ]` Address-generation timing smoke
@@ -124,7 +124,6 @@ Current next item:
 - `[x]` Add `tb-core-thumb-ldr-pc-cycle-timing`
 
 Follow-on items after that:
-- `[ ]` Add `tb-core-thumb-condbranch-cycle-timing`
 - `[ ]` Add `tb-core-thumb-ls-reg-cycle-timing`
 - `[ ]` Add `tb-core-thumb-ls-sp-cycle-timing`
 - `[ ]` Add `tb-core-thumb-add-addr-cycle-timing`
