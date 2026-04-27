@@ -73,7 +73,7 @@ Status labels:
 - `[ ]` Build instruction-family timing matrix with expected fetch spacing / internal cycles / writeback timing
 - `[ ]` Add explicit checks for sequential vs non-sequential bus transitions where still missing
 - `[ ]` Expand wait-state timing coverage for stalled fetch and stalled exception redirects
-- `[ ]` Review multiply timing against ARM7TDMI reference behavior for edge multiplier values
+- `[~]` Review multiply timing against ARM7TDMI reference behavior for edge multiplier values
 
 ## 3. Abort / Restart / External Side Effects
 
@@ -121,8 +121,4 @@ Near-term highest-value path:
 ## 8. Next Item
 
 Current next item:
-- `[x]` Add `tb-core-thumb-ldr-pc-cycle-timing`
-
-Follow-on items after that:
-- `[ ]` Add `tb-core-thumb-add-addr-cycle-timing`
-- `[ ]` Add `tb-core-thumb-sp-adjust-cycle-timing`
+- `[~]` Add ARM multiply edge-value cycle-timing coverage and reconcile it with the ARM7TDMI reference timing model
