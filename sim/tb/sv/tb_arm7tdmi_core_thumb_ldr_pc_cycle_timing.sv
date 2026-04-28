@@ -27,6 +27,9 @@ module tb_arm7tdmi_core_thumb_ldr_pc_cycle_timing
   int fetch_24;
   int fetch_2c;
   int int_cycles_seen;
+  arm_bus_cycle_t cycle_22;
+  arm_bus_cycle_t cycle_24;
+  arm_bus_cycle_t cycle_2c;
   int literal_read_seen;
   int ldr_seen;
   int following_seen;
@@ -81,6 +84,9 @@ module tb_arm7tdmi_core_thumb_ldr_pc_cycle_timing
     fetch_24 = -1;
     fetch_2c = -1;
     int_cycles_seen = 0;
+    cycle_22 = BUS_CYCLE_INT;
+    cycle_24 = BUS_CYCLE_INT;
+    cycle_2c = BUS_CYCLE_INT;
     literal_read_seen = 0;
     ldr_seen = 0;
     following_seen = 0;
@@ -109,9 +115,18 @@ module tb_arm7tdmi_core_thumb_ldr_pc_cycle_timing
 
       if (bus_valid) begin
         if (bus_addr == 32'h0000_0020 && fetch_20 < 0) fetch_20 = sim_cycle;
-        if (bus_addr == 32'h0000_0022 && fetch_22 < 0) fetch_22 = sim_cycle;
-        if (bus_addr == 32'h0000_0024 && fetch_24 < 0) fetch_24 = sim_cycle;
-        if (bus_addr == 32'h0000_002C && fetch_2c < 0) fetch_2c = sim_cycle;
+        if (bus_addr == 32'h0000_0022 && fetch_22 < 0) begin
+          fetch_22 = sim_cycle;
+          cycle_22 = bus_cycle;
+        end
+        if (bus_addr == 32'h0000_0024 && fetch_24 < 0) begin
+          fetch_24 = sim_cycle;
+          cycle_24 = bus_cycle;
+        end
+        if (bus_addr == 32'h0000_002C && fetch_2c < 0) begin
+          fetch_2c = sim_cycle;
+          cycle_2c = bus_cycle;
+        end
 
         if (!bus_write && bus_addr == 32'h0000_0028 && bus_size == BUS_SIZE_WORD) begin
           literal_read_seen++;
@@ -143,6 +158,11 @@ module tb_arm7tdmi_core_thumb_ldr_pc_cycle_timing
     if ((fetch_24 - fetch_22) != 2 || (fetch_2c - fetch_24) != 2) begin
       $fatal(1, "Thumb fetch stream after PC-relative LDR should return to 2-cycle spacing, saw %0d and %0d",
              fetch_24 - fetch_22, fetch_2c - fetch_24);
+    end
+    if ((cycle_22 != BUS_CYCLE_NONSEQ) || (cycle_24 != BUS_CYCLE_SEQ) ||
+        (cycle_2c != BUS_CYCLE_NONSEQ)) begin
+      $fatal(1, "unexpected Thumb PC-relative LDR fetch cycle classes 22=%0d 24=%0d 2c=%0d",
+             cycle_22, cycle_24, cycle_2c);
     end
     if (literal_read_seen != 1 || ldr_seen != 1 || following_seen != 1) begin
       $fatal(1, "expected one PC-relative literal load path, saw literal=%0d ldr=%0d following=%0d",
