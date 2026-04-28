@@ -30,6 +30,11 @@ module tb_arm7tdmi_core_swap_cycle_timing
   int fetch_0c;
   int fetch_10;
   int fetch_14;
+  arm_bus_cycle_t cycle_04;
+  arm_bus_cycle_t cycle_08;
+  arm_bus_cycle_t cycle_0c;
+  arm_bus_cycle_t cycle_10;
+  arm_bus_cycle_t cycle_14;
   int int_cycles_seen;
   int word_store_seen;
   int byte_store_seen;
@@ -111,6 +116,11 @@ module tb_arm7tdmi_core_swap_cycle_timing
     fetch_0c = -1;
     fetch_10 = -1;
     fetch_14 = -1;
+    cycle_04 = BUS_CYCLE_INT;
+    cycle_08 = BUS_CYCLE_INT;
+    cycle_0c = BUS_CYCLE_INT;
+    cycle_10 = BUS_CYCLE_INT;
+    cycle_14 = BUS_CYCLE_INT;
     int_cycles_seen = 0;
     word_store_seen = 0;
     byte_store_seen = 0;
@@ -139,11 +149,26 @@ module tb_arm7tdmi_core_swap_cycle_timing
         end
 
         unique case (bus_addr)
-          32'h0000_0004: if (fetch_04 < 0) fetch_04 = sim_cycle;
-          32'h0000_0008: if (fetch_08 < 0) fetch_08 = sim_cycle;
-          32'h0000_000C: if (fetch_0c < 0) fetch_0c = sim_cycle;
-          32'h0000_0010: if (fetch_10 < 0) fetch_10 = sim_cycle;
-          32'h0000_0014: if (fetch_14 < 0) fetch_14 = sim_cycle;
+          32'h0000_0004: if (fetch_04 < 0) begin
+            fetch_04 = sim_cycle;
+            cycle_04 = bus_cycle;
+          end
+          32'h0000_0008: if (fetch_08 < 0) begin
+            fetch_08 = sim_cycle;
+            cycle_08 = bus_cycle;
+          end
+          32'h0000_000C: if (fetch_0c < 0) begin
+            fetch_0c = sim_cycle;
+            cycle_0c = bus_cycle;
+          end
+          32'h0000_0010: if (fetch_10 < 0) begin
+            fetch_10 = sim_cycle;
+            cycle_10 = bus_cycle;
+          end
+          32'h0000_0014: if (fetch_14 < 0) begin
+            fetch_14 = sim_cycle;
+            cycle_14 = bus_cycle;
+          end
           32'h0000_0080: begin
           end
           default: begin
@@ -168,6 +193,13 @@ module tb_arm7tdmi_core_swap_cycle_timing
 
     if ((fetch_04 < 0) || (fetch_08 < 0) || (fetch_0c < 0) || (fetch_10 < 0) || (fetch_14 < 0)) begin
       $fatal(1, "missing swap timing fetch timestamps");
+    end
+
+    if ((cycle_04 != BUS_CYCLE_SEQ) || (cycle_08 != BUS_CYCLE_SEQ) ||
+        (cycle_0c != BUS_CYCLE_NONSEQ) || (cycle_10 != BUS_CYCLE_SEQ) ||
+        (cycle_14 != BUS_CYCLE_NONSEQ)) begin
+      $fatal(1, "unexpected swap timing fetch cycle classes 04=%0d 08=%0d 0c=%0d 10=%0d 14=%0d",
+             cycle_04, cycle_08, cycle_0c, cycle_10, cycle_14);
     end
 
     if ((fetch_08 - fetch_04) != 2) begin
