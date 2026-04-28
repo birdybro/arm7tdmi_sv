@@ -32,6 +32,13 @@ module tb_arm7tdmi_core_halfword_cycle_timing
   int fetch_24;
   int fetch_28;
   int fetch_2c;
+  arm_bus_cycle_t cycle_14;
+  arm_bus_cycle_t cycle_18;
+  arm_bus_cycle_t cycle_1c;
+  arm_bus_cycle_t cycle_20;
+  arm_bus_cycle_t cycle_24;
+  arm_bus_cycle_t cycle_28;
+  arm_bus_cycle_t cycle_2c;
   int int_cycles_seen;
   int store_seen;
   int ldrh_pre_seen;
@@ -116,6 +123,13 @@ module tb_arm7tdmi_core_halfword_cycle_timing
     fetch_24 = -1;
     fetch_28 = -1;
     fetch_2c = -1;
+    cycle_14 = BUS_CYCLE_INT;
+    cycle_18 = BUS_CYCLE_INT;
+    cycle_1c = BUS_CYCLE_INT;
+    cycle_20 = BUS_CYCLE_INT;
+    cycle_24 = BUS_CYCLE_INT;
+    cycle_28 = BUS_CYCLE_INT;
+    cycle_2c = BUS_CYCLE_INT;
     int_cycles_seen = 0;
     store_seen = 0;
     ldrh_pre_seen = 0;
@@ -144,13 +158,34 @@ module tb_arm7tdmi_core_halfword_cycle_timing
         end
 
         unique case (bus_addr)
-          32'h0000_0014: if (fetch_14 < 0) fetch_14 = sim_cycle;
-          32'h0000_0018: if (fetch_18 < 0) fetch_18 = sim_cycle;
-          32'h0000_001C: if (fetch_1c < 0) fetch_1c = sim_cycle;
-          32'h0000_0020: if (fetch_20 < 0) fetch_20 = sim_cycle;
-          32'h0000_0024: if (fetch_24 < 0) fetch_24 = sim_cycle;
-          32'h0000_0028: if (fetch_28 < 0) fetch_28 = sim_cycle;
-          32'h0000_002C: if (fetch_2c < 0) fetch_2c = sim_cycle;
+          32'h0000_0014: if (fetch_14 < 0) begin
+            fetch_14 = sim_cycle;
+            cycle_14 = bus_cycle;
+          end
+          32'h0000_0018: if (fetch_18 < 0) begin
+            fetch_18 = sim_cycle;
+            cycle_18 = bus_cycle;
+          end
+          32'h0000_001C: if (fetch_1c < 0) begin
+            fetch_1c = sim_cycle;
+            cycle_1c = bus_cycle;
+          end
+          32'h0000_0020: if (fetch_20 < 0) begin
+            fetch_20 = sim_cycle;
+            cycle_20 = bus_cycle;
+          end
+          32'h0000_0024: if (fetch_24 < 0) begin
+            fetch_24 = sim_cycle;
+            cycle_24 = bus_cycle;
+          end
+          32'h0000_0028: if (fetch_28 < 0) begin
+            fetch_28 = sim_cycle;
+            cycle_28 = bus_cycle;
+          end
+          32'h0000_002C: if (fetch_2c < 0) begin
+            fetch_2c = sim_cycle;
+            cycle_2c = bus_cycle;
+          end
           32'h0000_0082: begin
             if (bus_size !== BUS_SIZE_HALF) begin
               $fatal(1, "halfword timing expected halfword transfer at 0x82");
@@ -213,6 +248,14 @@ module tb_arm7tdmi_core_halfword_cycle_timing
     if ((fetch_14 < 0) || (fetch_18 < 0) || (fetch_1c < 0) || (fetch_20 < 0) ||
         (fetch_24 < 0) || (fetch_28 < 0) || (fetch_2c < 0)) begin
       $fatal(1, "missing halfword timing fetch timestamps");
+    end
+
+    if ((cycle_14 != BUS_CYCLE_SEQ) || (cycle_18 != BUS_CYCLE_NONSEQ) ||
+        (cycle_1c != BUS_CYCLE_NONSEQ) || (cycle_20 != BUS_CYCLE_NONSEQ) ||
+        (cycle_24 != BUS_CYCLE_NONSEQ) || (cycle_28 != BUS_CYCLE_NONSEQ) ||
+        (cycle_2c != BUS_CYCLE_NONSEQ)) begin
+      $fatal(1, "unexpected halfword timing fetch cycle classes 14=%0d 18=%0d 1c=%0d 20=%0d 24=%0d 28=%0d 2c=%0d",
+             cycle_14, cycle_18, cycle_1c, cycle_20, cycle_24, cycle_28, cycle_2c);
     end
 
     if ((fetch_18 - fetch_14) != 3) begin
