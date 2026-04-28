@@ -34,6 +34,13 @@ module tb_arm7tdmi_core_block_cycle_timing
   int fetch_14;
   int fetch_18;
   int fetch_1c;
+  arm_bus_cycle_t cycle_04;
+  arm_bus_cycle_t cycle_08;
+  arm_bus_cycle_t cycle_0c;
+  arm_bus_cycle_t cycle_10;
+  arm_bus_cycle_t cycle_14;
+  arm_bus_cycle_t cycle_18;
+  arm_bus_cycle_t cycle_1c;
   int int_cycles_seen;
   int stm_seen;
   int ldm_seen;
@@ -132,6 +139,13 @@ module tb_arm7tdmi_core_block_cycle_timing
     fetch_14 = -1;
     fetch_18 = -1;
     fetch_1c = -1;
+    cycle_04 = BUS_CYCLE_INT;
+    cycle_08 = BUS_CYCLE_INT;
+    cycle_0c = BUS_CYCLE_INT;
+    cycle_10 = BUS_CYCLE_INT;
+    cycle_14 = BUS_CYCLE_INT;
+    cycle_18 = BUS_CYCLE_INT;
+    cycle_1c = BUS_CYCLE_INT;
     int_cycles_seen = 0;
     stm_seen = 0;
     ldm_seen = 0;
@@ -166,13 +180,34 @@ module tb_arm7tdmi_core_block_cycle_timing
         end
 
         unique case (bus_addr)
-          32'h0000_0004: if (fetch_04 < 0) fetch_04 = sim_cycle;
-          32'h0000_0008: if (fetch_08 < 0) fetch_08 = sim_cycle;
-          32'h0000_000C: if (fetch_0c < 0) fetch_0c = sim_cycle;
-          32'h0000_0010: if (fetch_10 < 0) fetch_10 = sim_cycle;
-          32'h0000_0014: if (fetch_14 < 0) fetch_14 = sim_cycle;
-          32'h0000_0018: if (fetch_18 < 0) fetch_18 = sim_cycle;
-          32'h0000_001C: if (fetch_1c < 0) fetch_1c = sim_cycle;
+          32'h0000_0004: if (fetch_04 < 0) begin
+            fetch_04 = sim_cycle;
+            cycle_04 = bus_cycle;
+          end
+          32'h0000_0008: if (fetch_08 < 0) begin
+            fetch_08 = sim_cycle;
+            cycle_08 = bus_cycle;
+          end
+          32'h0000_000C: if (fetch_0c < 0) begin
+            fetch_0c = sim_cycle;
+            cycle_0c = bus_cycle;
+          end
+          32'h0000_0010: if (fetch_10 < 0) begin
+            fetch_10 = sim_cycle;
+            cycle_10 = bus_cycle;
+          end
+          32'h0000_0014: if (fetch_14 < 0) begin
+            fetch_14 = sim_cycle;
+            cycle_14 = bus_cycle;
+          end
+          32'h0000_0018: if (fetch_18 < 0) begin
+            fetch_18 = sim_cycle;
+            cycle_18 = bus_cycle;
+          end
+          32'h0000_001C: if (fetch_1c < 0) begin
+            fetch_1c = sim_cycle;
+            cycle_1c = bus_cycle;
+          end
           default: begin
           end
         endcase
@@ -217,6 +252,14 @@ module tb_arm7tdmi_core_block_cycle_timing
     if ((fetch_04 < 0) || (fetch_08 < 0) || (fetch_0c < 0) || (fetch_10 < 0) ||
         (fetch_14 < 0) || (fetch_18 < 0) || (fetch_1c < 0)) begin
       $fatal(1, "missing block timing fetch timestamps");
+    end
+
+    if ((cycle_04 != BUS_CYCLE_SEQ) || (cycle_08 != BUS_CYCLE_SEQ) ||
+        (cycle_0c != BUS_CYCLE_SEQ) || (cycle_10 != BUS_CYCLE_SEQ) ||
+        (cycle_14 != BUS_CYCLE_NONSEQ) || (cycle_18 != BUS_CYCLE_SEQ) ||
+        (cycle_1c != BUS_CYCLE_NONSEQ)) begin
+      $fatal(1, "unexpected block timing fetch cycle classes 04=%0d 08=%0d 0c=%0d 10=%0d 14=%0d 18=%0d 1c=%0d",
+             cycle_04, cycle_08, cycle_0c, cycle_10, cycle_14, cycle_18, cycle_1c);
     end
 
     if ((fetch_14 - fetch_10) != 6) begin
