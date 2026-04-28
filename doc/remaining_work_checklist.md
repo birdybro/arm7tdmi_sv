@@ -121,4 +121,4 @@ Near-term highest-value path:
 ## 8. Next Item
 
 Current next item:
-- `[~]` Expand explicit fetch cycle-class checks across remaining ARM/Thumb timing benches beyond the base, literal-load, ARM single-transfer, ARM halfword, and ARM swap timing benches, and compare multiply timing against ARM7TDMI reference behavior
+- `[~]` Expand explicit fetch cycle-class checks across remaining ARM/Thumb timing benches beyond the base, literal-load, ARM single-transfer, ARM halfword, ARM swap, and ARM swap-wait timing benches, and compare multiply timing against ARM7TDMI reference behavior

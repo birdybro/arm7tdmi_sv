@@ -31,6 +31,9 @@ module tb_arm7tdmi_core_swap_wait_cycle_timing
   int fetch_04;
   int fetch_08;
   int fetch_0c;
+  arm_bus_cycle_t cycle_04;
+  arm_bus_cycle_t cycle_08;
+  arm_bus_cycle_t cycle_0c;
   int int_cycles_seen;
   int store_seen;
   int old_value_seen;
@@ -130,6 +133,9 @@ module tb_arm7tdmi_core_swap_wait_cycle_timing
     fetch_04 = -1;
     fetch_08 = -1;
     fetch_0c = -1;
+    cycle_04 = BUS_CYCLE_INT;
+    cycle_08 = BUS_CYCLE_INT;
+    cycle_0c = BUS_CYCLE_INT;
     int_cycles_seen = 0;
     store_seen = 0;
     old_value_seen = 0;
@@ -162,9 +168,18 @@ module tb_arm7tdmi_core_swap_wait_cycle_timing
       end
 
       if (bus_valid) begin
-        if (bus_addr == 32'h0000_0004 && fetch_04 < 0) fetch_04 = sim_cycle;
-        if (bus_addr == 32'h0000_0008 && fetch_08 < 0) fetch_08 = sim_cycle;
-        if (bus_addr == 32'h0000_000C && fetch_0c < 0) fetch_0c = sim_cycle;
+        if (bus_addr == 32'h0000_0004 && fetch_04 < 0) begin
+          fetch_04 = sim_cycle;
+          cycle_04 = bus_cycle;
+        end
+        if (bus_addr == 32'h0000_0008 && fetch_08 < 0) begin
+          fetch_08 = sim_cycle;
+          cycle_08 = bus_cycle;
+        end
+        if (bus_addr == 32'h0000_000C && fetch_0c < 0) begin
+          fetch_0c = sim_cycle;
+          cycle_0c = bus_cycle;
+        end
       end else if (bus_cycle == BUS_CYCLE_INT) begin
         int_cycles_seen++;
       end
@@ -179,6 +194,11 @@ module tb_arm7tdmi_core_swap_wait_cycle_timing
 
     if ((fetch_04 < 0) || (fetch_08 < 0) || (fetch_0c < 0)) begin
       $fatal(1, "missing swap wait timing fetch timestamps");
+    end
+    if ((cycle_04 != BUS_CYCLE_SEQ) || (cycle_08 != BUS_CYCLE_SEQ) ||
+        (cycle_0c != BUS_CYCLE_NONSEQ)) begin
+      $fatal(1, "unexpected swap wait timing fetch cycle classes 04=%0d 08=%0d 0c=%0d",
+             cycle_04, cycle_08, cycle_0c);
     end
     if ((fetch_08 - fetch_04) != 2) begin
       $fatal(1, "plain MOV fetch spacing should be 2 cycles, saw %0d", fetch_08 - fetch_04);
